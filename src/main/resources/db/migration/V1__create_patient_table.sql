@@ -1,0 +1,7 @@
+CREATE TABLE patient (
+id BIGSERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+birth_date DATE,
+pesel VARCHAR(11) UNIQUE
+);
