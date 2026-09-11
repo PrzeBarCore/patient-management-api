@@ -25,4 +25,6 @@ public class MedicalOrder {
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false, updatable = false)
     private Patient patient;
+    @Version
+    private Long version;
 }

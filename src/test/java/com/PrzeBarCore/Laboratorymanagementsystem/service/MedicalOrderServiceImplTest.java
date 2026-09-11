@@ -273,4 +273,82 @@ class MedicalOrderServiceImplTest {
         verify(orderRepository).findById(orderId);
         verify(orderRepository, never()).save(ArgumentMatchers.any(MedicalOrder.class));
     }
+
+    @Test
+    void shouldUpdateStatusFromInProcessToCompleted(){
+        //Arrange
+        Patient patient = new Patient();
+        patient.setId(2L);
+
+        MedicalOrder order = new MedicalOrder();
+        Long orderId = 1L;
+        OrderStatus statusToUpdate = OrderStatus.COMPLETED;
+
+        order.setId(orderId);
+        order.setStatus(OrderStatus.IN_PROCESS);
+        order.setPatient(patient);
+        order.setRegistrationDateTime(LocalDateTime.now());
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        //Act
+        MedicalOrderResponse response = service.updateStatus(orderId, statusToUpdate);
+        //Assert
+        assertThat(response.status()).isEqualTo(statusToUpdate);
+        assertThat(order.getStatus()).isEqualTo(statusToUpdate);
+
+        verify(orderRepository).findById(orderId);
+        verify(orderRepository, never()).save(ArgumentMatchers.any(MedicalOrder.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingStatusFromCompletedToNew(){
+        //Arrange
+        Patient patient = new Patient();
+        patient.setId(2L);
+
+        MedicalOrder order = new MedicalOrder();
+        Long orderId = 1L;
+        OrderStatus statusToUpdate = OrderStatus.NEW;
+
+        order.setId(orderId);
+        order.setStatus(OrderStatus.COMPLETED);
+        order.setPatient(patient);
+        order.setRegistrationDateTime(LocalDateTime.now());
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        //Act
+        var exception = assertThrows(InvalidOrderStatusTransitionException.class, () -> service.updateStatus(orderId, statusToUpdate));
+        //Assert
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(exception.getMessage()).isEqualTo("Cannot change order status from " + OrderStatus.COMPLETED + " to " + statusToUpdate);
+
+        verify(orderRepository).findById(orderId);
+        verify(orderRepository, never()).save(ArgumentMatchers.any(MedicalOrder.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingStatusFromCanceledToInProcess(){
+        //Arrange
+        Patient patient = new Patient();
+        patient.setId(2L);
+
+        MedicalOrder order = new MedicalOrder();
+        Long orderId = 1L;
+        OrderStatus statusToUpdate = OrderStatus.IN_PROCESS;
+
+        order.setId(orderId);
+        order.setStatus(OrderStatus.CANCELED);
+        order.setPatient(patient);
+        order.setRegistrationDateTime(LocalDateTime.now());
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        //Act
+        var exception = assertThrows(InvalidOrderStatusTransitionException.class, () -> service.updateStatus(orderId, statusToUpdate));
+        //Assert
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELED);
+        assertThat(exception.getMessage()).isEqualTo("Cannot change order status from " + OrderStatus.CANCELED + " to " + statusToUpdate);
+
+        verify(orderRepository).findById(orderId);
+        verify(orderRepository, never()).save(ArgumentMatchers.any(MedicalOrder.class));
+    }
 }
