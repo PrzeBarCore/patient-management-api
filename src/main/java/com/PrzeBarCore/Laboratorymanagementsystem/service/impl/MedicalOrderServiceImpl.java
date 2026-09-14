@@ -1,19 +1,27 @@
 package com.PrzeBarCore.Laboratorymanagementsystem.service.impl;
 
+import com.PrzeBarCore.Laboratorymanagementsystem.dto.events.MedicalOrderStatusChangedEvent;
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.request.CreateMedicalOrderRequest;
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.response.MedicalOrderResponse;
 import com.PrzeBarCore.Laboratorymanagementsystem.entity.MedicalOrder;
+import com.PrzeBarCore.Laboratorymanagementsystem.entity.OutboxEvent;
 import com.PrzeBarCore.Laboratorymanagementsystem.entity.Patient;
+import com.PrzeBarCore.Laboratorymanagementsystem.exception.EventSerializationException;
 import com.PrzeBarCore.Laboratorymanagementsystem.exception.InvalidOrderStatusTransitionException;
 import com.PrzeBarCore.Laboratorymanagementsystem.exception.MedicalOrderNotFoundException;
 import com.PrzeBarCore.Laboratorymanagementsystem.exception.PatientNotFoundException;
+import com.PrzeBarCore.Laboratorymanagementsystem.global.AggregateType;
+import com.PrzeBarCore.Laboratorymanagementsystem.global.EventType;
 import com.PrzeBarCore.Laboratorymanagementsystem.global.OrderStatus;
 import com.PrzeBarCore.Laboratorymanagementsystem.mapper.MedicalOrderMapper;
 import com.PrzeBarCore.Laboratorymanagementsystem.repository.MedicalOrderRepository;
+import com.PrzeBarCore.Laboratorymanagementsystem.repository.OutboxEventRepository;
 import com.PrzeBarCore.Laboratorymanagementsystem.repository.PatientRepository;
 import com.PrzeBarCore.Laboratorymanagementsystem.service.MedicalOrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,10 +30,14 @@ import java.util.List;
 public class MedicalOrderServiceImpl implements MedicalOrderService {
     private final MedicalOrderRepository orderRepository;
     private final PatientRepository patientRepository;
+    private final OutboxEventRepository eventRepository;
+    private final ObjectMapper objectMapper;
 
-    public MedicalOrderServiceImpl(MedicalOrderRepository orderRepository, PatientRepository patientRepository){
+    public MedicalOrderServiceImpl(MedicalOrderRepository orderRepository, PatientRepository patientRepository, OutboxEventRepository eventRepository, ObjectMapper objectMapper){
         this.orderRepository = orderRepository;
         this.patientRepository = patientRepository;
+        this.eventRepository = eventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -62,6 +74,19 @@ public class MedicalOrderServiceImpl implements MedicalOrderService {
         if(!allowedTransition)
             throw new InvalidOrderStatusTransitionException(order.getStatus(), status);
         order.setStatus(status);
+
+        LocalDateTime eventTime = LocalDateTime.now();
+        var event = new OutboxEvent();
+        try{
+            event.setPayload(objectMapper.writeValueAsString(new MedicalOrderStatusChangedEvent(id, currentStatus, status, eventTime)));
+        } catch(JacksonException exception){
+            throw new EventSerializationException(AggregateType.MEDICAL_ORDER, id, exception.getCause());
+        }
+        event.setAggregateId(id);
+        event.setAggregateType(AggregateType.MEDICAL_ORDER);
+        event.setEventType(EventType.MEDICAL_ORDER_STATUS_CHANGED);
+        event.setCreatedAt(eventTime);
+        eventRepository.save(event);
 
         return MedicalOrderMapper.toResponse(order);
     }
