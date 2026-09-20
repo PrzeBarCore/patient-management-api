@@ -1,6 +1,7 @@
 package com.PrzeBarCore.Laboratorymanagementsystem.controller;
 
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.request.CreateMedicalOrderRequest;
+import com.PrzeBarCore.Laboratorymanagementsystem.dto.request.UpdateMedicalOrderStatusRequest;
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.response.MedicalOrderResponse;
 import com.PrzeBarCore.Laboratorymanagementsystem.service.MedicalOrderService;
 import jakarta.validation.Valid;
@@ -21,6 +22,15 @@ public class MedicalOrderController {
         MedicalOrderResponse response = orderService.create(request);
         URI location = URI.create("/api/orders/" + response.id());
         return ResponseEntity.created(location)
+                .body(response);
+    }
+
+    @PatchMapping(path = "/api/orders/{id}/status")
+    public ResponseEntity<MedicalOrderResponse> updateOrderStatus(@PathVariable Long id, @Valid @RequestBody UpdateMedicalOrderStatusRequest request){
+        MedicalOrderResponse response = orderService.updateStatus(id, request.newStatus());
+        URI location = URI.create("/api/orders/" + response.id() + "/status");
+        return ResponseEntity.ok()
+                .location(location)
                 .body(response);
     }
 

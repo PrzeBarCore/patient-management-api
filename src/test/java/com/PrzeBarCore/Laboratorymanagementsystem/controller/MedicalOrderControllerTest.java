@@ -1,13 +1,14 @@
 package com.PrzeBarCore.Laboratorymanagementsystem.controller;
 
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.request.CreateMedicalOrderRequest;
+import com.PrzeBarCore.Laboratorymanagementsystem.dto.request.UpdateMedicalOrderStatusRequest;
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.response.MedicalOrderResponse;
 import com.PrzeBarCore.Laboratorymanagementsystem.exception.ErrorCode;
+import com.PrzeBarCore.Laboratorymanagementsystem.exception.InvalidOrderStatusTransitionException;
 import com.PrzeBarCore.Laboratorymanagementsystem.exception.MedicalOrderNotFoundException;
 import com.PrzeBarCore.Laboratorymanagementsystem.exception.PatientNotFoundException;
 import com.PrzeBarCore.Laboratorymanagementsystem.global.OrderStatus;
 import com.PrzeBarCore.Laboratorymanagementsystem.service.MedicalOrderService;
-import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -21,12 +22,14 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static com.PrzeBarCore.Laboratorymanagementsystem.dto.validation.ValidationMessages.ORDER_STATUS_MUST_NOT_BE_NULL;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MedicalOrderController.class)
-class MedicalOrderControllerTest {
+public class MedicalOrderControllerTest {
     @Autowired
     ObjectMapper mapper;
     @Autowired
@@ -36,15 +39,15 @@ class MedicalOrderControllerTest {
     MedicalOrderService service;
 
     @Test
-    void shouldReturnCreatedStatusWhenOrderRequestIsValid() throws Exception{
+    void shouldReturnCreatedStatusWhenOrderRequestIsValid() throws Exception {
         // Arrange
         Long patientId = 1L;
         Long orderId = 10L;
-        LocalDateTime registrationDate = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+        LocalDateTime registrationDate = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         OrderStatus status = OrderStatus.NEW;
 
         CreateMedicalOrderRequest request = new CreateMedicalOrderRequest(patientId);
-        MedicalOrderResponse expectedResponse = new MedicalOrderResponse(orderId, registrationDate,status,patientId);
+        MedicalOrderResponse expectedResponse = new MedicalOrderResponse(orderId, registrationDate, status, patientId);
 
         when(service.create(request)).thenReturn(expectedResponse);
         // Act + Assert
@@ -63,7 +66,7 @@ class MedicalOrderControllerTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenPatientDoesNotExist() throws Exception{
+    void shouldReturnNotFoundWhenPatientDoesNotExist() throws Exception {
         // Arrange
         Long patientId = 1L;
         CreateMedicalOrderRequest request = new CreateMedicalOrderRequest(patientId);
@@ -84,18 +87,18 @@ class MedicalOrderControllerTest {
     }
 
     @Test
-    void shouldReturnOkWhenOrderExists() throws Exception{
+    void shouldReturnOkWhenOrderExists() throws Exception {
         // Arrange
         Long patientId = 1L;
         Long orderId = 10L;
-        LocalDateTime registrationDate = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+        LocalDateTime registrationDate = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         OrderStatus status = OrderStatus.NEW;
 
-        MedicalOrderResponse expectedResponse = new MedicalOrderResponse(orderId, registrationDate,status,patientId);
+        MedicalOrderResponse expectedResponse = new MedicalOrderResponse(orderId, registrationDate, status, patientId);
 
         when(service.findById(orderId)).thenReturn(expectedResponse);
         // Act + Assert
-        mockMvc.perform(get("/api/orders/{id}",orderId))
+        mockMvc.perform(get("/api/orders/{id}", orderId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(orderId))
@@ -107,13 +110,13 @@ class MedicalOrderControllerTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenOrderDoesNotExist() throws Exception{
+    void shouldReturnNotFoundWhenOrderDoesNotExist() throws Exception {
         // Arrange
         Long orderId = 10L;
 
         when(service.findById(orderId)).thenThrow(new MedicalOrderNotFoundException(orderId));
         // Act + Assert
-        mockMvc.perform(get("/api/orders/{id}",orderId))
+        mockMvc.perform(get("/api/orders/{id}", orderId))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
@@ -125,20 +128,20 @@ class MedicalOrderControllerTest {
     }
 
     @Test
-    void shouldReturnOkWhenOrdersExist() throws Exception{
+    void shouldReturnOkWhenOrdersExist() throws Exception {
         // Arrange
         Long patientId = 1L;
 
         Long orderId1 = 10L;
-        LocalDateTime registrationDate1 = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+        LocalDateTime registrationDate1 = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         OrderStatus status1 = OrderStatus.NEW;
 
         Long orderId2 = 11L;
-        LocalDateTime registrationDate2 = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+        LocalDateTime registrationDate2 = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         OrderStatus status2 = OrderStatus.IN_PROCESS;
 
-        MedicalOrderResponse expectedResponse1 = new MedicalOrderResponse(orderId1, registrationDate1,status1,patientId);
-        MedicalOrderResponse expectedResponse2 = new MedicalOrderResponse(orderId2, registrationDate2,status2,patientId);
+        MedicalOrderResponse expectedResponse1 = new MedicalOrderResponse(orderId1, registrationDate1, status1, patientId);
+        MedicalOrderResponse expectedResponse2 = new MedicalOrderResponse(orderId2, registrationDate2, status2, patientId);
 
         when(service.findAll()).thenReturn(List.of(expectedResponse1, expectedResponse2));
         // Act + Assert
@@ -147,15 +150,15 @@ class MedicalOrderControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath(String.format("$.[?(@.id == %d && @.registrationDateTime == \"%s\" && @.status == \"%s\" && @.patientId == %d)]",
-                orderId1, registrationDate1, status1.name(), patientId)).exists())
+                        orderId1, registrationDate1, status1.name(), patientId)).exists())
                 .andExpect(jsonPath(String.format("$.[?(@.id == %d && @.registrationDateTime == \"%s\" && @.status == \"%s\" && @.patientId == %d)]",
-                orderId2, registrationDate2, status2.name(), patientId)).exists());
+                        orderId2, registrationDate2, status2.name(), patientId)).exists());
 
         verify(service).findAll();
     }
 
     @Test
-    void shouldReturnOkWhenOrdersDoNotExist() throws Exception{
+    void shouldReturnOkWhenOrdersDoNotExist() throws Exception {
         // Arrange
 
         when(service.findAll()).thenReturn(List.of());
@@ -169,7 +172,7 @@ class MedicalOrderControllerTest {
     }
 
     @Test
-    void shouldReturnNoContentWhenOrderToDeleteExists() throws Exception{
+    void shouldReturnNoContentWhenOrderToDeleteExists() throws Exception {
         // Arrange
         Long orderId = 1L;
 
@@ -181,7 +184,7 @@ class MedicalOrderControllerTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenOrderToDeleteDoesNotExist() throws Exception{
+    void shouldReturnNotFoundWhenOrderToDeleteDoesNotExist() throws Exception {
         // Arrange
         Long orderId = 1L;
 
@@ -197,5 +200,98 @@ class MedicalOrderControllerTest {
                 .andExpect(jsonPath("$.path").value("/api/orders/" + orderId));
 
         verify(service).delete(orderId);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenOrderToUpdateStatusDoesNotExist() throws Exception {
+        //Arrange
+        OrderStatus status = OrderStatus.IN_PROCESS;
+        Long orderId = 1L;
+        var request = new UpdateMedicalOrderStatusRequest(status);
+
+        when(service.updateStatus(orderId, status))
+                .thenThrow(new MedicalOrderNotFoundException(orderId));
+
+        //Act + Assert
+        mockMvc.perform(patch("/api/orders/{id}/status", orderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ORDER_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.errorMessage").value("Order with ID " + orderId + " not found"))
+                .andExpect(jsonPath("$.path").value("/api/orders/" + orderId + "/status"));
+
+        verify(service).updateStatus(orderId, status);
+    }
+
+    @Test
+    void shouldUpdateStatus() throws Exception {
+        //Arrange
+        OrderStatus status = OrderStatus.IN_PROCESS;
+        Long orderId = 1L;
+        Long patientId = 1L;
+        var registrationDate = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        var response = new MedicalOrderResponse(orderId, registrationDate, status, patientId);
+        var request = new UpdateMedicalOrderStatusRequest(status);
+
+        when(service.updateStatus(orderId, status)).thenReturn(response);
+        //Act + Assert
+        mockMvc.perform(patch("/api/orders/{id}/status", orderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(orderId))
+                .andExpect(jsonPath("$.registrationDateTime").value(registrationDate.toString()))
+                .andExpect(jsonPath("$.status").value(status.name()))
+                .andExpect(jsonPath("$.patientId").value(patientId));
+
+        verify(service).updateStatus(orderId, status);
+    }
+
+    @Test
+    void shouldReturnConflictWhenNewStatusIsNotAllowed() throws Exception {
+//Arrange
+        OrderStatus status = OrderStatus.IN_PROCESS;
+        Long orderId = 1L;
+        var request = new UpdateMedicalOrderStatusRequest(status);
+
+        when(service.updateStatus(orderId, status))
+                .thenThrow(new InvalidOrderStatusTransitionException(OrderStatus.COMPLETED, status));
+
+        //Act + Assert
+        mockMvc.perform(patch("/api/orders/{id}/status", orderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.INVALID_ORDER_STATUS_TRANSITION.name()))
+                .andExpect(jsonPath("$.errorMessage").value("Cannot change order status from " + OrderStatus.COMPLETED + " to " + status))
+                .andExpect(jsonPath("$.path").value("/api/orders/" + orderId + "/status"));
+
+        verify(service).updateStatus(orderId, status);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenStatusIsNull() throws Exception {
+        //Arrange
+        var request = new UpdateMedicalOrderStatusRequest(null);
+
+        //Act + Assert
+        mockMvc.perform(patch("/api/orders/{id}/status", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.VALIDATION_ERROR.name()))
+                .andExpect(jsonPath("$.errorMessage").value("Request validation failed"))
+                .andExpect(jsonPath("$.path").value("/api/orders/" + 1L + "/status"))
+                .andExpect(jsonPath("$.fieldErrors[?(@.fieldName == 'newStatus')].errorMessage")
+                        .value(hasItem(ORDER_STATUS_MUST_NOT_BE_NULL)));
+        verifyNoInteractions(service);
     }
 }
