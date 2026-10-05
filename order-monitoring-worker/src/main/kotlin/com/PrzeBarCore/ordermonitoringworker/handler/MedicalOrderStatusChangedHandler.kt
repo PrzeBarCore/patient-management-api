@@ -13,7 +13,6 @@ class MedicalOrderStatusChangedHandler(private val objectMapper: ObjectMapper) :
     override val eventType = EventType.MEDICAL_ORDER_STATUS_CHANGED
     override fun handle(receivedEvent: PublishedEvent) {
         val eventDetails = objectMapper.treeToValue(receivedEvent.payload,MedicalOrderStatusChangedEvent::class.java)
-
         log.info("Medical order status changed event. Order Id = {}, Old status = {}, New status = {}",
             eventDetails.orderId,
             eventDetails.oldStatus,

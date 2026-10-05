@@ -1,0 +1,4 @@
+ALTER TABLE processed_event
+    ADD COLUMN status VARCHAR(50) NOT NULL,
+    ADD COLUMN started_at TIMESTAMP NOT NULL,
+    ALTER COLUMN processed_at DROP NOT NULL;

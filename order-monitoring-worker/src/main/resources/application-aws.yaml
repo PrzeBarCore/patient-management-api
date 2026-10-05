@@ -1,3 +1,13 @@
 aws:
   sqs:
     queue-url: ${SQS_QUEUE_URL}
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orderMonitoring
+    username: postgres
+    password: postgres
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
