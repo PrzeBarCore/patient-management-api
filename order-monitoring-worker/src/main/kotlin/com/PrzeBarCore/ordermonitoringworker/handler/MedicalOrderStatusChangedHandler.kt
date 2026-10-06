@@ -3,12 +3,15 @@ package com.PrzeBarCore.ordermonitoringworker.handler
 import com.PrzeBarCore.ordermonitoringworker.dto.MedicalOrderStatusChangedEvent
 import com.PrzeBarCore.ordermonitoringworker.dto.PublishedEvent
 import com.PrzeBarCore.ordermonitoringworker.global.enums.EventType
+import com.PrzeBarCore.ordermonitoringworker.service.MedicalOrderMonitoringService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import tools.jackson.databind.ObjectMapper
 
 @Component
-class MedicalOrderStatusChangedHandler(private val objectMapper: ObjectMapper) : EventHandler {
+class MedicalOrderStatusChangedHandler(private val objectMapper: ObjectMapper,
+                                       private val service : MedicalOrderMonitoringService)
+    : EventHandler {
 
     override val eventType = EventType.MEDICAL_ORDER_STATUS_CHANGED
     override fun handle(receivedEvent: PublishedEvent) {
@@ -17,6 +20,7 @@ class MedicalOrderStatusChangedHandler(private val objectMapper: ObjectMapper) :
             eventDetails.orderId,
             eventDetails.oldStatus,
             eventDetails.newStatus)
+        service.processOrderStatusChanged(eventDetails)
     }
 
     companion object {
