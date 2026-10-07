@@ -19,7 +19,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDateTime
 import java.util.Optional
-import kotlin.test.Test
+import org.junit.jupiter.api.Test
 
 @ExtendWith(MockitoExtension::class)
 class MedicalOrderMonitoringServiceTest{
