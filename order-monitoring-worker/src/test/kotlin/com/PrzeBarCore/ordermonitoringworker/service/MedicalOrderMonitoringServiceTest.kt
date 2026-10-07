@@ -1,5 +1,6 @@
 package com.PrzeBarCore.ordermonitoringworker.service
 
+import com.PrzeBarCore.ordermonitoringworker.dto.MedicalOrderCreatedEvent
 import com.PrzeBarCore.ordermonitoringworker.dto.MedicalOrderStatusChangedEvent
 import com.PrzeBarCore.ordermonitoringworker.entity.MonitoredOrder
 import com.PrzeBarCore.ordermonitoringworker.global.enums.MonitoringStatus
@@ -129,5 +130,69 @@ class MedicalOrderMonitoringServiceTest{
 
         verify(medicalOrderRepository).findById(orderId)
         verify(medicalOrderRepository, never()).save(any())
+    }
+    @Test
+    fun shouldCreateMonitoredOrderWhenOrderCreated(){
+        val orderId = 1L
+        val createdAt = LocalDateTime.now().minusMinutes(1)
+        val status = OrderStatus.NEW
+        val event = MedicalOrderCreatedEvent(orderId,
+            status,
+            createdAt)
+
+        whenever(medicalOrderRepository.findById(orderId)).thenReturn(Optional.empty())
+        whenever(medicalOrderRepository.save(any<MonitoredOrder>()))
+            .thenAnswer { it.getArgument<MonitoredOrder>(0) }
+
+        medicalOrderMonitoringService.processOrderCreated(event)
+
+        val captor = ArgumentCaptor.forClass(MonitoredOrder::class.java)
+        verify(medicalOrderRepository).save(captor.capture())
+
+        val monitoredOrder= captor.value
+
+        assertThat(monitoredOrder.orderId).isEqualTo(orderId)
+        assertThat(monitoredOrder.status).isEqualTo(status)
+        assertThat(monitoredOrder.statusChangedAt).isEqualTo(createdAt)
+        assertThat(monitoredOrder.updatedAt).isAfter(createdAt)
+        assertThat(monitoredOrder.monitoringStatus).isEqualTo(MonitoringStatus.ON_TIME)
+        assertThat(monitoredOrder.deadlineAt).isEqualTo(createdAt.plusDays(1))
+
+        verify(medicalOrderRepository).findById(orderId)
+    }
+    @Test
+    fun shouldIgnoreCreatedEventWhenOrderAlreadyExists(){
+        val orderId = 1L
+        val createdAt = LocalDateTime.now().minusDays(1)
+        val status = OrderStatus.NEW
+        val event = MedicalOrderCreatedEvent(orderId,
+            status,
+            createdAt)
+
+        val existingStatus = OrderStatus.IN_PROCESS
+        val existingStatusChangedAt = LocalDateTime.now().minusDays(1)
+        val existingDeadline = LocalDateTime.now().plusDays(2)
+        val existingUpdatedAt = LocalDateTime.now()
+        val existingMonitoringStatus = MonitoringStatus.ON_TIME
+        val monitoredOrder = MonitoredOrder(
+            orderId,
+            existingStatus,
+            existingStatusChangedAt,
+            existingDeadline,
+            existingMonitoringStatus,
+            existingUpdatedAt)
+
+        whenever(medicalOrderRepository.findById(orderId)).thenReturn(Optional.of(monitoredOrder))
+
+        medicalOrderMonitoringService.processOrderCreated(event)
+
+        assertThat(monitoredOrder.status).isEqualTo(existingStatus)
+        assertThat(monitoredOrder.statusChangedAt).isEqualTo(existingStatusChangedAt)
+        assertThat(monitoredOrder.deadlineAt).isEqualTo(existingDeadline)
+        assertThat(monitoredOrder.updatedAt).isEqualTo(existingUpdatedAt)
+        assertThat(monitoredOrder.monitoringStatus).isEqualTo(existingMonitoringStatus)
+
+        verify(medicalOrderRepository, never()).save(any())
+        verify(medicalOrderRepository).findById(orderId)
     }
 }

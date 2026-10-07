@@ -1,5 +1,6 @@
 package com.PrzeBarCore.Laboratorymanagementsystem.service.impl;
 
+import com.PrzeBarCore.Laboratorymanagementsystem.dto.events.MedicalOrderCreatedEvent;
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.events.MedicalOrderStatusChangedEvent;
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.request.CreateMedicalOrderRequest;
 import com.PrzeBarCore.Laboratorymanagementsystem.dto.response.MedicalOrderResponse;
@@ -48,7 +49,23 @@ public class MedicalOrderServiceImpl implements MedicalOrderService {
         order.setRegistrationDateTime(LocalDateTime.now());
         order.setStatus(OrderStatus.NEW);
         order.setPatient(patient);
-        return MedicalOrderMapper.toResponse(orderRepository.save(order));
+
+        var savedOrder = orderRepository.save(order);
+
+        LocalDateTime eventTime = LocalDateTime.now();
+        var event = new OutboxEvent();
+        try{
+            event.setPayload(objectMapper.writeValueAsString(new MedicalOrderCreatedEvent(savedOrder.getId(), savedOrder.getStatus(),eventTime)));
+        } catch(JacksonException exception){
+            throw new EventSerializationException(AggregateType.MEDICAL_ORDER, savedOrder.getId(), exception);
+        }
+        event.setAggregateId(savedOrder.getId());
+        event.setAggregateType(AggregateType.MEDICAL_ORDER);
+        event.setEventType(EventType.MEDICAL_ORDER_CREATED);
+        event.setCreatedAt(eventTime);
+        eventRepository.save(event);
+
+        return MedicalOrderMapper.toResponse(savedOrder);
     }
 
     @Override

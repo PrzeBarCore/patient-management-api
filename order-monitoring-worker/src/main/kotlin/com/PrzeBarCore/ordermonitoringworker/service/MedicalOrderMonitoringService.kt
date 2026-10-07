@@ -1,11 +1,12 @@
 package com.PrzeBarCore.ordermonitoringworker.service
 
+import com.PrzeBarCore.ordermonitoringworker.dto.MedicalOrderCreatedEvent
 import com.PrzeBarCore.ordermonitoringworker.dto.MedicalOrderStatusChangedEvent
 import com.PrzeBarCore.ordermonitoringworker.entity.MonitoredOrder
 import com.PrzeBarCore.ordermonitoringworker.global.enums.MonitoringStatus
 import com.PrzeBarCore.ordermonitoringworker.global.enums.OrderStatus
 import com.PrzeBarCore.ordermonitoringworker.repository.MonitoredOrderRepository
-import jakarta.transaction.Transactional
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -33,6 +34,24 @@ class MedicalOrderMonitoringService(private val monitoredOrderRepository: Monito
                 LocalDateTime.now())
             monitoredOrderRepository.save(order)
         }
+    }
+
+    @Transactional
+    fun processOrderCreated(event: MedicalOrderCreatedEvent) {
+        val existingOrder = monitoredOrderRepository.findById(event.orderId)
+        if (existingOrder.isPresent) {
+            return
+        }
+
+        val order = MonitoredOrder(
+            event.orderId,
+            event.status,
+            event.createdAt,
+            calculateDeadline(event.status, event.createdAt),
+            calculateMonitoringStatus(event.status),
+            LocalDateTime.now()
+        )
+        monitoredOrderRepository.save(order)
     }
 
     private fun calculateDeadline(orderStatus : OrderStatus, changedAt : LocalDateTime) : LocalDateTime? {
