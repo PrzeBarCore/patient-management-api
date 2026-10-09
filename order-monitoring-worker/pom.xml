@@ -11,8 +11,8 @@
 	<groupId>com.przebarcore</groupId>
 	<artifactId>order-monitoring-worker</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>order-monitoring-worker</name>
+	<description>order-monitoring-worker</description>
 	<url/>
 	<licenses>
 		<license/>

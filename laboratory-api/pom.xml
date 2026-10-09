@@ -11,8 +11,8 @@
 	<groupId>com.przebarcore</groupId>
 	<artifactId>laboratory-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-    <name/>
-	<description/>
+	<name>laboratory-api</name>
+	<description>laboratory-api</description>
 	<url/>
 	<licenses>
 		<license/>
