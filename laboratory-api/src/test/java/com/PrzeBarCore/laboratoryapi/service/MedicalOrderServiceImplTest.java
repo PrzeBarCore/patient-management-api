@@ -9,15 +9,18 @@ import com.przebarcore.laboratoryapi.exception.MedicalOrderNotFoundException;
 import com.przebarcore.laboratoryapi.exception.PatientNotFoundException;
 import com.przebarcore.laboratoryapi.global.OrderStatus;
 import com.przebarcore.laboratoryapi.repository.MedicalOrderRepository;
+import com.przebarcore.laboratoryapi.repository.OutboxEventRepository;
 import com.przebarcore.laboratoryapi.repository.PatientRepository;
 import com.przebarcore.laboratoryapi.service.impl.MedicalOrderServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,9 +36,23 @@ class MedicalOrderServiceImplTest {
     private MedicalOrderRepository orderRepository;
     @Mock
     private PatientRepository patientRepository;
+    @Mock
+    private OutboxEventRepository eventRepository;
 
-    @InjectMocks
     private MedicalOrderServiceImpl service;
+
+    @BeforeEach
+    void setUp() {
+        ObjectMapper objectMapper = JsonMapper.builder()
+                .findAndAddModules()
+                .build();
+
+        service = new MedicalOrderServiceImpl(
+                orderRepository,
+                patientRepository,
+                eventRepository,
+                objectMapper);
+    }
     
     @Test
     void shouldCreateOrderWhenPatientExists() {

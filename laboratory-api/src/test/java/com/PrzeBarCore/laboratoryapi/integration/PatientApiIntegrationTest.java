@@ -2,12 +2,14 @@ package com.przebarcore.laboratoryapi.integration;
 
 
 import com.przebarcore.laboratoryapi.dto.request.CreatePatientRequest;
+import com.przebarcore.laboratoryapi.outbox.EventSender;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
@@ -35,6 +37,8 @@ class PatientApiIntegrationTest {
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
+    @MockitoBean
+    private EventSender eventSender;
 
     @Test
     void shouldCreateAndRetrievePatient() throws Exception{

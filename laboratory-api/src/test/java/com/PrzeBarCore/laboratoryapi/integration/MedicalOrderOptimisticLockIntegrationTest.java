@@ -3,6 +3,7 @@ package com.przebarcore.laboratoryapi.integration;
 import com.przebarcore.laboratoryapi.entity.MedicalOrder;
 import com.przebarcore.laboratoryapi.entity.Patient;
 import com.przebarcore.laboratoryapi.global.OrderStatus;
+import com.przebarcore.laboratoryapi.outbox.EventSender;
 import com.przebarcore.laboratoryapi.repository.MedicalOrderRepository;
 import com.przebarcore.laboratoryapi.repository.PatientRepository;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
@@ -30,6 +32,8 @@ public class MedicalOrderOptimisticLockIntegrationTest {
     @ServiceConnection
     private static  PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer(DockerImageName.parse("postgres:16"));
 
+    @MockitoBean
+    private EventSender eventSender;
     @Autowired
     private MedicalOrderRepository medicalOrderRepository;
     @Autowired

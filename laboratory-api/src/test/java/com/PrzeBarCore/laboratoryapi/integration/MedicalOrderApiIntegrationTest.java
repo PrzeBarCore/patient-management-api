@@ -4,6 +4,7 @@ import com.przebarcore.laboratoryapi.dto.request.CreateMedicalOrderRequest;
 import com.przebarcore.laboratoryapi.dto.request.CreatePatientRequest;
 import com.przebarcore.laboratoryapi.exception.ErrorCode;
 import com.przebarcore.laboratoryapi.global.OrderStatus;
+import com.przebarcore.laboratoryapi.outbox.EventSender;
 import com.przebarcore.laboratoryapi.repository.MedicalOrderRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Container;
@@ -34,6 +36,9 @@ class MedicalOrderApiIntegrationTest {
     @Container
     @ServiceConnection
     static PostgreSQLContainer postgres = new PostgreSQLContainer(DockerImageName.parse("postgres:16"));
+
+    @MockitoBean
+    private EventSender eventSender;
 
     @Autowired
     private MockMvc mockMvc;

@@ -4,6 +4,7 @@ import com.przebarcore.laboratoryapi.entity.MedicalOrder;
 import com.przebarcore.laboratoryapi.entity.OutboxEvent;
 import com.przebarcore.laboratoryapi.entity.Patient;
 import com.przebarcore.laboratoryapi.global.OrderStatus;
+import com.przebarcore.laboratoryapi.outbox.EventSender;
 import com.przebarcore.laboratoryapi.repository.MedicalOrderRepository;
 import com.przebarcore.laboratoryapi.repository.OutboxEventRepository;
 import com.przebarcore.laboratoryapi.repository.PatientRepository;
@@ -34,6 +35,8 @@ public class MedicalOrderOutboxRollbackIntegrationTest {
     @ServiceConnection
     private static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer(DockerImageName.parse("postgres:16"));
 
+    @MockitoBean
+    private EventSender eventSender;
     @Autowired
     private MedicalOrderService medicalOrderService;
     @Autowired

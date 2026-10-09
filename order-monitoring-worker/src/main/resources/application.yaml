@@ -1,6 +1,13 @@
 spring:
   application:
     name: order-monitoring-worker
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orderMonitoring
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
 monitoring:
   warning-threshold-hours: 6
   scheduler-fixed-delay: 60000
