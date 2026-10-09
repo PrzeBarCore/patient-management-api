@@ -1,7 +1,7 @@
-package com.PrzeBarCore.ordermonitoringworker.sqs
+package com.przebarcore.ordermonitoringworker.sqs
 
-import com.PrzeBarCore.ordermonitoringworker.dto.PublishedEvent
-import com.PrzeBarCore.ordermonitoringworker.processing.EventProcessor
+import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
+import com.przebarcore.ordermonitoringworker.processing.EventProcessor
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile

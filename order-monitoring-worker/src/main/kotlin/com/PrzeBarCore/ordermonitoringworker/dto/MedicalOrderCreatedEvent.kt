@@ -1,6 +1,6 @@
-package com.PrzeBarCore.ordermonitoringworker.dto
+package com.przebarcore.ordermonitoringworker.dto
 
-import com.PrzeBarCore.ordermonitoringworker.global.enums.OrderStatus
+import com.przebarcore.ordermonitoringworker.global.enums.OrderStatus
 import java.time.LocalDateTime
 
 data class MedicalOrderCreatedEvent (val orderId: Long,

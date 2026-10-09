@@ -1,8 +1,8 @@
-package com.PrzeBarCore.ordermonitoringworker.routing
+package com.przebarcore.ordermonitoringworker.routing
 
-import com.PrzeBarCore.ordermonitoringworker.dto.PublishedEvent
-import com.PrzeBarCore.ordermonitoringworker.global.enums.EventType
-import com.PrzeBarCore.ordermonitoringworker.handler.EventHandler
+import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
+import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.handler.EventHandler
 import org.springframework.stereotype.Component
 
 @Component

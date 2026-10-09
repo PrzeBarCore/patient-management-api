@@ -1,12 +1,12 @@
-package com.PrzeBarCore.ordermonitoringworker.processing
+package com.przebarcore.ordermonitoringworker.processing
 
-import com.PrzeBarCore.ordermonitoringworker.dto.PublishedEvent
-import com.PrzeBarCore.ordermonitoringworker.entity.ProcessedEvent
-import com.PrzeBarCore.ordermonitoringworker.global.enums.AggregateType
-import com.PrzeBarCore.ordermonitoringworker.global.enums.EventStatus
-import com.PrzeBarCore.ordermonitoringworker.global.enums.EventType
-import com.PrzeBarCore.ordermonitoringworker.repository.ProcessedEventRepository
-import com.PrzeBarCore.ordermonitoringworker.routing.EventRouter
+import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
+import com.przebarcore.ordermonitoringworker.entity.ProcessedEvent
+import com.przebarcore.ordermonitoringworker.global.enums.AggregateType
+import com.przebarcore.ordermonitoringworker.global.enums.EventStatus
+import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.repository.ProcessedEventRepository
+import com.przebarcore.ordermonitoringworker.routing.EventRouter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks

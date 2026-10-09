@@ -1,9 +1,9 @@
-package com.PrzeBarCore.ordermonitoringworker.sqs
+package com.przebarcore.ordermonitoringworker.sqs
 
-import com.PrzeBarCore.ordermonitoringworker.dto.PublishedEvent
-import com.PrzeBarCore.ordermonitoringworker.global.enums.AggregateType
-import com.PrzeBarCore.ordermonitoringworker.global.enums.EventType
-import com.PrzeBarCore.ordermonitoringworker.processing.EventProcessor
+import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
+import com.przebarcore.ordermonitoringworker.global.enums.AggregateType
+import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.processing.EventProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith

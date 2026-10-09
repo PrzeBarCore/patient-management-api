@@ -1,7 +1,7 @@
-package com.PrzeBarCore.ordermonitoringworker.dto
+package com.przebarcore.ordermonitoringworker.dto
 
-import com.PrzeBarCore.ordermonitoringworker.global.enums.AggregateType
-import com.PrzeBarCore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.global.enums.AggregateType
+import com.przebarcore.ordermonitoringworker.global.enums.EventType
 import tools.jackson.databind.JsonNode
 import java.time.LocalDateTime
 

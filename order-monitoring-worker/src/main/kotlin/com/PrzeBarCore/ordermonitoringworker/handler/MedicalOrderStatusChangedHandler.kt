@@ -1,9 +1,9 @@
-package com.PrzeBarCore.ordermonitoringworker.handler
+package com.przebarcore.ordermonitoringworker.handler
 
-import com.PrzeBarCore.ordermonitoringworker.dto.MedicalOrderStatusChangedEvent
-import com.PrzeBarCore.ordermonitoringworker.dto.PublishedEvent
-import com.PrzeBarCore.ordermonitoringworker.global.enums.EventType
-import com.PrzeBarCore.ordermonitoringworker.service.MedicalOrderMonitoringService
+import com.przebarcore.ordermonitoringworker.dto.MedicalOrderStatusChangedEvent
+import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
+import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.service.MedicalOrderMonitoringService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import tools.jackson.databind.ObjectMapper

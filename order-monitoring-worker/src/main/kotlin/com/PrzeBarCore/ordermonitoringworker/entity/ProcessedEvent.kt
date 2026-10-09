@@ -1,6 +1,6 @@
-package com.PrzeBarCore.ordermonitoringworker.entity
+package com.przebarcore.ordermonitoringworker.entity
 
-import com.PrzeBarCore.ordermonitoringworker.global.enums.EventStatus
+import com.przebarcore.ordermonitoringworker.global.enums.EventStatus
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated

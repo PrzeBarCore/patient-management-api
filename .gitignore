@@ -1,6 +1,6 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
+laboratory-api/HELP.md
+laboratory-api/target/
+laboratory-api/.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 .env
@@ -15,7 +15,7 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+laboratory-api/.idea
 *.iws
 *.iml
 *.ipr

@@ -1,6 +1,6 @@
-package com.PrzeBarCore.ordermonitoringworker.repository
+package com.przebarcore.ordermonitoringworker.repository
 
-import com.PrzeBarCore.ordermonitoringworker.entity.ProcessedEvent
+import com.przebarcore.ordermonitoringworker.entity.ProcessedEvent
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query

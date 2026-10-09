@@ -1,4 +1,4 @@
-package com.PrzeBarCore.ordermonitoringworker.global.enums
+package com.przebarcore.ordermonitoringworker.global.enums
 
 enum class MonitoringStatus {
     ON_TIME,

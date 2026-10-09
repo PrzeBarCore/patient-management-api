@@ -1,3 +1,6 @@
 spring:
   application:
     name: order-monitoring-worker
+monitoring:
+  warning-threshold-hours: 6
+  scheduler-fixed-delay: 60000

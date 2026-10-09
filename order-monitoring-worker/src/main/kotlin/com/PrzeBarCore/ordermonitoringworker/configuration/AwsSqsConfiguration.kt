@@ -1,4 +1,4 @@
-package com.PrzeBarCore.ordermonitoringworker.configuration
+package com.przebarcore.ordermonitoringworker.configuration
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

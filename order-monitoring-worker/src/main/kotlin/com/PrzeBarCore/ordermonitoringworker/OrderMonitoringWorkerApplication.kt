@@ -1,4 +1,4 @@
-package com.PrzeBarCore.ordermonitoringworker
+package com.przebarcore.ordermonitoringworker
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
