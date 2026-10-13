@@ -1,0 +1,3 @@
+aws:
+  sqs:
+    notification-queue-url: ${N_SQS_QUEUE_URL}
