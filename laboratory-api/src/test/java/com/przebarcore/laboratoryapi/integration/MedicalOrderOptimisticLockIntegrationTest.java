@@ -3,7 +3,7 @@ package com.przebarcore.laboratoryapi.integration;
 import com.przebarcore.laboratoryapi.entity.MedicalOrder;
 import com.przebarcore.laboratoryapi.entity.Patient;
 import com.przebarcore.laboratoryapi.global.OrderStatus;
-import com.przebarcore.laboratoryapi.outbox.EventSender;
+import com.przebarcore.laboratoryapi.outbox.sender.EventSender;
 import com.przebarcore.laboratoryapi.repository.MedicalOrderRepository;
 import com.przebarcore.laboratoryapi.repository.PatientRepository;
 import org.junit.jupiter.api.Test;
@@ -79,7 +79,7 @@ public class MedicalOrderOptimisticLockIntegrationTest {
 
 
         orderB.setStatus(OrderStatus.CANCELED);
-        var exception = assertThrows(ObjectOptimisticLockingFailureException.class, () ->transactionTemplate.execute(status -> medicalOrderRepository.saveAndFlush(orderB)));
+        assertThrows(ObjectOptimisticLockingFailureException.class, () ->transactionTemplate.execute(status -> medicalOrderRepository.saveAndFlush(orderB)));
 
         MedicalOrder result = medicalOrderRepository.findById(savedOrder.getId()).orElseThrow();
         assertThat(result.getVersion()).isEqualTo(1);

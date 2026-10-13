@@ -1,5 +1,6 @@
 aws:
   sqs:
     queue-url: ${SQS_QUEUE_URL}
+    notification-queue-url: ${N_SQS_QUEUE_URL}
 
 

@@ -1,8 +1,8 @@
 package com.przebarcore.ordermonitoringworker.sqs
 
-import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
-import com.przebarcore.ordermonitoringworker.global.enums.AggregateType
-import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.dto.incoming.RetrievedEvent
+import com.przebarcore.ordermonitoringworker.global.enums.incoming.AggregateType
+import com.przebarcore.ordermonitoringworker.global.enums.incoming.EventType
 import com.przebarcore.ordermonitoringworker.processing.EventProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -44,7 +44,7 @@ class SqsMessageReceiverTest {
 
     @Test
     fun shouldDeleteMessageAfterSuccessfulProcessing() {
-        val publishedEvent = PublishedEvent(
+        val retrievedEvent = RetrievedEvent(
             1L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
@@ -52,7 +52,7 @@ class SqsMessageReceiverTest {
             LocalDateTime.now(),
             JsonNodeFactory.instance.objectNode()
         )
-        val attempts = listOf(publishedEvent)
+        val attempts = listOf(retrievedEvent)
         for(attempt in attempts) {
         val message = Message.builder()
             .messageId("message-1")
@@ -66,11 +66,11 @@ class SqsMessageReceiverTest {
                 .build()
         )
 
-        whenever(objectMapper.readValue(eq("some-json"), eq(PublishedEvent::class.java))).thenReturn(publishedEvent)
+        whenever(objectMapper.readValue(eq("some-json"), eq(RetrievedEvent::class.java))).thenReturn(retrievedEvent)
 
         sqsMessageReceiver.receiveMessages()
 
-        verify(eventProcessor).process(publishedEvent)
+        verify(eventProcessor).process(retrievedEvent)
 
         val captor = argumentCaptor<DeleteMessageRequest>()
         verify(sqsClient).deleteMessage(captor.capture())
@@ -82,7 +82,7 @@ class SqsMessageReceiverTest {
 
     @Test
     fun shouldNotDeleteMessageWhenExceptionIsThrown() {
-        val publishedEvent = PublishedEvent(
+        val retrievedEvent = RetrievedEvent(
             1L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
@@ -99,13 +99,13 @@ class SqsMessageReceiverTest {
 
         whenever(sqsClient.receiveMessage(any<ReceiveMessageRequest>()))
             .thenReturn(ReceiveMessageResponse.builder().messages(message).build())
-        whenever(objectMapper.readValue(eq("some-json"), eq(PublishedEvent::class.java)))
-            .thenReturn(publishedEvent)
+        whenever(objectMapper.readValue(eq("some-json"), eq(RetrievedEvent::class.java)))
+            .thenReturn(retrievedEvent)
         doThrow(RuntimeException("Processing failed")).whenever(eventProcessor).process(any())
 
         sqsMessageReceiver.receiveMessages()
 
-        verify(eventProcessor).process(publishedEvent)
+        verify(eventProcessor).process(retrievedEvent)
         verify(sqsClient, never()).deleteMessage(any<DeleteMessageRequest>())
     }
 }

@@ -2,7 +2,7 @@ package com.przebarcore.laboratoryapi.integration;
 
 
 import com.przebarcore.laboratoryapi.dto.request.CreatePatientRequest;
-import com.przebarcore.laboratoryapi.outbox.EventSender;
+import com.przebarcore.laboratoryapi.outbox.sender.EventSender;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

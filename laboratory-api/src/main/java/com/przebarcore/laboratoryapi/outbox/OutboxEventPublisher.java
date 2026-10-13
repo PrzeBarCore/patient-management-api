@@ -30,7 +30,7 @@ public class OutboxEventPublisher {
                     outboxAggregateProcessor.processEventsForAggregate(aggregateId, aggregateType);
                 }
                 catch (RuntimeException exception){
-                    log.error("Error when processing events for aggregate: " + aggregateId + " of type: " + aggregateType + " " + exception);
+                    log.error("Error when processing events for aggregate: {} of type: {} {}", aggregateId, aggregateType, exception);
                 }
             }
 

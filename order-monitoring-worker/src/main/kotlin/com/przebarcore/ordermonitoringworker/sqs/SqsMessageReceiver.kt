@@ -1,6 +1,6 @@
 package com.przebarcore.ordermonitoringworker.sqs
 
-import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
+import com.przebarcore.ordermonitoringworker.dto.incoming.RetrievedEvent
 import com.przebarcore.ordermonitoringworker.processing.EventProcessor
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -37,7 +37,7 @@ class SqsMessageReceiver(
                 message.attributes()[MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT]
                     ?: "unknown"
             try{
-                val event = objectMapper.readValue(message.body(), PublishedEvent::class.java)
+                val event = objectMapper.readValue(message.body(), RetrievedEvent::class.java)
                 log.info("Received event id={}, type={}, receive count={}",
                     event.eventId,
                     event.eventType,

@@ -1,4 +1,4 @@
-package com.przebarcore.laboratoryapi.outbox;
+package com.przebarcore.laboratoryapi.outbox.sender;
 
 import com.przebarcore.laboratoryapi.entity.OutboxEvent;
 import org.slf4j.Logger;

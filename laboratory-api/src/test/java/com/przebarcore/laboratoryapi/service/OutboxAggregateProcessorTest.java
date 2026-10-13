@@ -2,7 +2,7 @@ package com.przebarcore.laboratoryapi.service;
 
 import com.przebarcore.laboratoryapi.entity.OutboxEvent;
 import com.przebarcore.laboratoryapi.global.AggregateType;
-import com.przebarcore.laboratoryapi.outbox.EventSender;
+import com.przebarcore.laboratoryapi.outbox.sender.EventSender;
 import com.przebarcore.laboratoryapi.outbox.OutboxAggregateProcessor;
 import com.przebarcore.laboratoryapi.repository.OutboxEventRepository;
 import org.junit.jupiter.api.Test;

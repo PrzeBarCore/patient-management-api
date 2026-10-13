@@ -1,10 +1,10 @@
 package com.przebarcore.ordermonitoringworker.processing
 
-import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
+import com.przebarcore.ordermonitoringworker.dto.incoming.RetrievedEvent
 import com.przebarcore.ordermonitoringworker.entity.ProcessedEvent
-import com.przebarcore.ordermonitoringworker.global.enums.AggregateType
+import com.przebarcore.ordermonitoringworker.global.enums.incoming.AggregateType
 import com.przebarcore.ordermonitoringworker.global.enums.EventStatus
-import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.global.enums.incoming.EventType
 import com.przebarcore.ordermonitoringworker.repository.ProcessedEventRepository
 import com.przebarcore.ordermonitoringworker.routing.EventRouter
 import org.junit.jupiter.api.Test
@@ -37,7 +37,7 @@ class EventProcessorTest {
 
     @Test
     fun shouldProcessNewEvent(){
-        val publishedEvent = PublishedEvent(1L,
+        val retrievedEvent = RetrievedEvent(1L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
             1L,
@@ -45,26 +45,26 @@ class EventProcessorTest {
             JsonNodeFactory.instance.objectNode()
         )
 
-        val processedEvent = ProcessedEvent(publishedEvent.eventId, null, LocalDateTime.now(), EventStatus.PROCESSING)
+        val processedEvent = ProcessedEvent(retrievedEvent.eventId, null, LocalDateTime.now(), EventStatus.PROCESSING)
 
-        whenever(eventRepository.tryClaimEvent( eq(publishedEvent.eventId), any())).thenReturn(1)
-        whenever(eventRepository.findById(publishedEvent.eventId)).thenReturn(Optional.of(processedEvent))
+        whenever(eventRepository.tryClaimEvent( eq(retrievedEvent.eventId), any())).thenReturn(1)
+        whenever(eventRepository.findById(retrievedEvent.eventId)).thenReturn(Optional.of(processedEvent))
 
-        eventProcessor.process(publishedEvent)
+        eventProcessor.process(retrievedEvent)
 
         assertThat(processedEvent.status)
             .isEqualTo(EventStatus.PROCESSED)
 
         assertThat(processedEvent.processedAt)
             .isNotNull()
-        verify(eventRepository).tryClaimEvent( eq(publishedEvent.eventId), any())
-        verify(eventRepository).findById(publishedEvent.eventId)
-        verify(eventRouter).route(publishedEvent)
+        verify(eventRepository).tryClaimEvent( eq(retrievedEvent.eventId), any())
+        verify(eventRepository).findById(retrievedEvent.eventId)
+        verify(eventRouter).route(retrievedEvent)
     }
 
     @Test
     fun shouldSkipAlreadyProcessedEvent(){
-        val publishedEvent = PublishedEvent(1L,
+        val retrievedEvent = RetrievedEvent(1L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
             1L,
@@ -72,18 +72,18 @@ class EventProcessorTest {
             JsonNodeFactory.instance.objectNode()
         )
 
-        whenever(eventRepository.tryClaimEvent( eq(publishedEvent.eventId), any())).thenReturn(0)
+        whenever(eventRepository.tryClaimEvent( eq(retrievedEvent.eventId), any())).thenReturn(0)
 
-        eventProcessor.process(publishedEvent)
+        eventProcessor.process(retrievedEvent)
 
-        verify(eventRepository).tryClaimEvent( eq(publishedEvent.eventId), any())
+        verify(eventRepository).tryClaimEvent( eq(retrievedEvent.eventId), any())
         verifyNoInteractions(eventRouter)
-        verify(eventRepository, never()).findById(publishedEvent.eventId)
+        verify(eventRepository, never()).findById(retrievedEvent.eventId)
     }
 
     @Test
     fun shouldNotMarkEventAsProcessedWhenHandlerFails(){
-        val publishedEvent = PublishedEvent(1L,
+        val retrievedEvent = RetrievedEvent(1L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
             1L,
@@ -91,18 +91,18 @@ class EventProcessorTest {
             JsonNodeFactory.instance.objectNode()
         )
 
-        whenever(eventRepository.tryClaimEvent( eq(publishedEvent.eventId), any())).thenReturn(1)
+        whenever(eventRepository.tryClaimEvent( eq(retrievedEvent.eventId), any())).thenReturn(1)
         doThrow(RuntimeException("Handler failed"))
             .whenever(eventRouter)
-            .route(publishedEvent)
+            .route(retrievedEvent)
 
         assertThrows(RuntimeException::class.java) {
-            eventProcessor.process(publishedEvent)
+            eventProcessor.process(retrievedEvent)
         }
 
-        verify(eventRepository).tryClaimEvent( eq(publishedEvent.eventId), any())
-        verify(eventRouter).route(publishedEvent)
-        verify(eventRepository, never()).findById(publishedEvent.eventId)
+        verify(eventRepository).tryClaimEvent( eq(retrievedEvent.eventId), any())
+        verify(eventRouter).route(retrievedEvent)
+        verify(eventRepository, never()).findById(retrievedEvent.eventId)
     }
 
 }

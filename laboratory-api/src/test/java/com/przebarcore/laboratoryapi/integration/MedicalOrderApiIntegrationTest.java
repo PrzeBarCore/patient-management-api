@@ -4,7 +4,7 @@ import com.przebarcore.laboratoryapi.dto.request.CreateMedicalOrderRequest;
 import com.przebarcore.laboratoryapi.dto.request.CreatePatientRequest;
 import com.przebarcore.laboratoryapi.exception.ErrorCode;
 import com.przebarcore.laboratoryapi.global.OrderStatus;
-import com.przebarcore.laboratoryapi.outbox.EventSender;
+import com.przebarcore.laboratoryapi.outbox.sender.EventSender;
 import com.przebarcore.laboratoryapi.repository.MedicalOrderRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -11,3 +11,4 @@ spring:
 monitoring:
   warning-threshold-hours: 6
   scheduler-fixed-delay: 60000
+  scheduler-enabled: true

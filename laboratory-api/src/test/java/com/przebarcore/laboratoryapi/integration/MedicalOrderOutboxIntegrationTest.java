@@ -7,7 +7,7 @@ import com.przebarcore.laboratoryapi.entity.Patient;
 import com.przebarcore.laboratoryapi.global.AggregateType;
 import com.przebarcore.laboratoryapi.global.EventType;
 import com.przebarcore.laboratoryapi.global.OrderStatus;
-import com.przebarcore.laboratoryapi.outbox.EventSender;
+import com.przebarcore.laboratoryapi.outbox.sender.EventSender;
 import com.przebarcore.laboratoryapi.outbox.OutboxAggregateProcessor;
 import com.przebarcore.laboratoryapi.outbox.OutboxEventPublisher;
 import com.przebarcore.laboratoryapi.repository.MedicalOrderRepository;

@@ -1,20 +1,31 @@
 package com.przebarcore.ordermonitoringworker.service
 
-import com.przebarcore.ordermonitoringworker.dto.MedicalOrderCreatedEvent
-import com.przebarcore.ordermonitoringworker.dto.MedicalOrderStatusChangedEvent
+import com.przebarcore.ordermonitoringworker.dto.incoming.MedicalOrderCreatedEvent
+import com.przebarcore.ordermonitoringworker.dto.incoming.MedicalOrderStatusChangedEvent
+import com.przebarcore.ordermonitoringworker.dto.outgoing.NotificationRequestedEvent
 import com.przebarcore.ordermonitoringworker.entity.MonitoredOrder
+import com.przebarcore.ordermonitoringworker.entity.OutboxEvent
 import com.przebarcore.ordermonitoringworker.global.enums.MonitoringStatus
+import com.przebarcore.ordermonitoringworker.global.enums.outgoing.NotificationType
 import com.przebarcore.ordermonitoringworker.global.enums.OrderStatus
+import com.przebarcore.ordermonitoringworker.global.enums.outgoing.ReferenceType
+import com.przebarcore.ordermonitoringworker.global.enums.outgoing.OutboxAggregateType
+import com.przebarcore.ordermonitoringworker.global.enums.outgoing.OutboxEventType
 import com.przebarcore.ordermonitoringworker.repository.MonitoredOrderRepository
+import com.przebarcore.ordermonitoringworker.repository.OutboxEventRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.stereotype.Service
+import tools.jackson.databind.ObjectMapper
 import java.time.Clock
 import java.time.LocalDateTime
+import java.util.UUID
 
 @Service
 class MedicalOrderMonitoringService(
     private val monitoredOrderRepository: MonitoredOrderRepository,
+    private val outboxEventRepository: OutboxEventRepository,
+    private val objectMapper: ObjectMapper,
     @Value("\${monitoring.warning-threshold-hours}")
     private val warningThresholdHours : Long,
     private val clock: Clock
@@ -79,6 +90,31 @@ class MedicalOrderMonitoringService(
             if(newMonitoringStatus != monitoredOrder.monitoringStatus){
                 monitoredOrder.monitoringStatus = newMonitoringStatus
                 monitoredOrder.updatedAt = now
+
+                if(newMonitoringStatus == MonitoringStatus.OVERDUE || newMonitoringStatus == MonitoringStatus.WARNING) {
+                    val notificationType =
+                        if(newMonitoringStatus == MonitoringStatus.OVERDUE)
+                            NotificationType.ESCALATION
+                        else
+                            NotificationType.REMINDER
+
+                    val payload = objectMapper.writeValueAsString(
+                        NotificationRequestedEvent(UUID.randomUUID(),
+                            ReferenceType.MEDICAL_ORDER,
+                            monitoredOrder.orderId,
+                            notificationType, now))
+
+
+                val outboxEvent = OutboxEvent(null,
+                    monitoredOrder.orderId,
+                    OutboxAggregateType.MEDICAL_ORDER,
+                    OutboxEventType.NOTIFICATION_REQUESTED,
+                    payload,
+                    now,
+                    null)
+
+                    outboxEventRepository.save(outboxEvent)
+                }
             }
         }
     }

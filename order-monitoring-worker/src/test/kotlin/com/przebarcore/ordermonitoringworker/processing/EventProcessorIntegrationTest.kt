@@ -1,9 +1,9 @@
 package com.przebarcore.ordermonitoringworker.processing
 
-import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
-import com.przebarcore.ordermonitoringworker.global.enums.AggregateType
+import com.przebarcore.ordermonitoringworker.dto.incoming.RetrievedEvent
+import com.przebarcore.ordermonitoringworker.global.enums.incoming.AggregateType
 import com.przebarcore.ordermonitoringworker.global.enums.EventStatus
-import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.global.enums.incoming.EventType
 import com.przebarcore.ordermonitoringworker.repository.ProcessedEventRepository
 import com.przebarcore.ordermonitoringworker.routing.EventRouter
 import org.assertj.core.api.Assertions.assertThat
@@ -52,7 +52,7 @@ class EventProcessorIntegrationTest {
 
     @Test
     fun shouldRollbackTransactionWhenExceptionIsThrown(){
-        val publishedEvent = PublishedEvent(1L,
+        val retrievedEvent = RetrievedEvent(1L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
             1L,
@@ -62,19 +62,19 @@ class EventProcessorIntegrationTest {
 
         doThrow(RuntimeException("Handler failed"))
             .whenever(eventRouter)
-            .route(publishedEvent)
+            .route(retrievedEvent)
 
         assertThrows(RuntimeException::class.java) {
-            eventProcessor.process(publishedEvent)
+            eventProcessor.process(retrievedEvent)
         }
 
-        assertThat(eventRepository.findById(publishedEvent.eventId)).isEmpty
-        verify(eventRouter).route(publishedEvent)
+        assertThat(eventRepository.findById(retrievedEvent.eventId)).isEmpty
+        verify(eventRouter).route(retrievedEvent)
     }
 
     @Test
     fun shouldProcessEvent(){
-        val publishedEvent = PublishedEvent(1L,
+        val retrievedEvent = RetrievedEvent(1L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
             1L,
@@ -82,18 +82,18 @@ class EventProcessorIntegrationTest {
             JsonNodeFactory.instance.objectNode()
         )
 
-            eventProcessor.process(publishedEvent)
+            eventProcessor.process(retrievedEvent)
 
-        val processedEvent = eventRepository.findById(publishedEvent.eventId).orElseThrow()
+        val processedEvent = eventRepository.findById(retrievedEvent.eventId).orElseThrow()
         assertThat(processedEvent.status).isEqualTo(EventStatus.PROCESSED)
         assertThat(processedEvent.processedAt).isNotNull()
         assertThat(processedEvent.startedAt).isNotNull()
-        verify(eventRouter).route(publishedEvent)
+        verify(eventRouter).route(retrievedEvent)
     }
 
     @Test
     fun shouldProcessSameEventOnlyOnce(){
-        val publishedEvent = PublishedEvent(1L,
+        val retrievedEvent = RetrievedEvent(1L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
             1L,
@@ -101,20 +101,20 @@ class EventProcessorIntegrationTest {
             JsonNodeFactory.instance.objectNode()
         )
 
-        eventProcessor.process(publishedEvent)
-        eventProcessor.process(publishedEvent)
+        eventProcessor.process(retrievedEvent)
+        eventProcessor.process(retrievedEvent)
 
         verify(eventRouter, times(1))
-            .route(publishedEvent)
+            .route(retrievedEvent)
         assertThat(eventRepository.count()).isEqualTo(1)
-        val processedEvent = eventRepository.findById(publishedEvent.eventId).orElseThrow()
+        val processedEvent = eventRepository.findById(retrievedEvent.eventId).orElseThrow()
         assertThat(processedEvent.status).isEqualTo(EventStatus.PROCESSED)
         assertThat(processedEvent.processedAt).isNotNull()
     }
 
     @Test
     fun shouldProcessSameEventOnlyOnceWhenTwoWorkersRunConcurrently() {
-        val publishedEvent = PublishedEvent(
+        val retrievedEvent = RetrievedEvent(
             100L,
             EventType.MEDICAL_ORDER_STATUS_CHANGED,
             AggregateType.MEDICAL_ORDER,
@@ -132,7 +132,7 @@ class EventProcessorIntegrationTest {
             executor.submit {
                 readyLatch.countDown()
                 startLatch.await()
-                eventProcessor.process(publishedEvent)
+                eventProcessor.process(retrievedEvent)
             }
         }
 
@@ -142,10 +142,10 @@ class EventProcessorIntegrationTest {
 
         executor.shutdown()
 
-        verify(eventRouter, times(1)).route(publishedEvent)
+        verify(eventRouter, times(1)).route(retrievedEvent)
         assertThat(eventRepository.count()).isEqualTo(1)
 
-        val processedEvent = eventRepository.findById(publishedEvent.eventId).orElseThrow()
+        val processedEvent = eventRepository.findById(retrievedEvent.eventId).orElseThrow()
         assertThat(processedEvent.status).isEqualTo(EventStatus.PROCESSED)
         assertThat(processedEvent.processedAt).isNotNull()
     }

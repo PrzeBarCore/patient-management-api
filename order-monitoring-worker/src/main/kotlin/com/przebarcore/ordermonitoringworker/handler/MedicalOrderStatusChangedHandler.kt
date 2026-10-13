@@ -1,8 +1,8 @@
 package com.przebarcore.ordermonitoringworker.handler
 
-import com.przebarcore.ordermonitoringworker.dto.MedicalOrderStatusChangedEvent
-import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
-import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.dto.incoming.MedicalOrderStatusChangedEvent
+import com.przebarcore.ordermonitoringworker.dto.incoming.RetrievedEvent
+import com.przebarcore.ordermonitoringworker.global.enums.incoming.EventType
 import com.przebarcore.ordermonitoringworker.service.MedicalOrderMonitoringService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -14,7 +14,7 @@ class MedicalOrderStatusChangedHandler(private val objectMapper: ObjectMapper,
     : EventHandler {
 
     override val eventType = EventType.MEDICAL_ORDER_STATUS_CHANGED
-    override fun handle(receivedEvent: PublishedEvent) {
+    override fun handle(receivedEvent: RetrievedEvent) {
         val eventDetails = objectMapper.treeToValue(receivedEvent.payload,MedicalOrderStatusChangedEvent::class.java)
         log.info("Medical order status changed event. Order Id = {}, Old status = {}, New status = {}",
             eventDetails.orderId,

@@ -1,9 +1,9 @@
 package com.przebarcore.ordermonitoringworker.handler
 
-import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
-import com.przebarcore.ordermonitoringworker.global.enums.EventType
+import com.przebarcore.ordermonitoringworker.dto.incoming.RetrievedEvent
+import com.przebarcore.ordermonitoringworker.global.enums.incoming.EventType
 
 interface EventHandler {
     val eventType: EventType
-    fun handle(receivedEvent: PublishedEvent)
+    fun handle(receivedEvent: RetrievedEvent)
 }

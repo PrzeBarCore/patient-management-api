@@ -1,6 +1,6 @@
 package com.przebarcore.ordermonitoringworker.processing
 
-import com.przebarcore.ordermonitoringworker.dto.PublishedEvent
+import com.przebarcore.ordermonitoringworker.dto.incoming.RetrievedEvent
 import com.przebarcore.ordermonitoringworker.global.enums.EventStatus
 import com.przebarcore.ordermonitoringworker.repository.ProcessedEventRepository
 import com.przebarcore.ordermonitoringworker.routing.EventRouter
@@ -14,7 +14,7 @@ class EventProcessor(
     private val eventRouter: EventRouter){
 
     @Transactional
-    fun process(event: PublishedEvent) {
+    fun process(event: RetrievedEvent) {
         val claimed = eventRepository.tryClaimEvent(
             event.eventId,
             LocalDateTime.now()

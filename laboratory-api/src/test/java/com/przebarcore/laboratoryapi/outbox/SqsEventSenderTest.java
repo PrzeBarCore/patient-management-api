@@ -5,6 +5,7 @@ import com.przebarcore.laboratoryapi.entity.OutboxEvent;
 import com.przebarcore.laboratoryapi.global.AggregateType;
 import com.przebarcore.laboratoryapi.global.EventType;
 import com.przebarcore.laboratoryapi.global.OrderStatus;
+import com.przebarcore.laboratoryapi.outbox.sender.SqsEventSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

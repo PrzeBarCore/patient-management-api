@@ -2,6 +2,7 @@ package com.przebarcore.laboratoryapi.outbox;
 
 import com.przebarcore.laboratoryapi.entity.OutboxEvent;
 import com.przebarcore.laboratoryapi.global.AggregateType;
+import com.przebarcore.laboratoryapi.outbox.sender.EventSender;
 import com.przebarcore.laboratoryapi.repository.OutboxEventRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

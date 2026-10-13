@@ -1,4 +1,4 @@
-package com.przebarcore.ordermonitoringworker.dto
+package com.przebarcore.ordermonitoringworker.dto.incoming
 
 import com.przebarcore.ordermonitoringworker.global.enums.OrderStatus
 import java.time.LocalDateTime

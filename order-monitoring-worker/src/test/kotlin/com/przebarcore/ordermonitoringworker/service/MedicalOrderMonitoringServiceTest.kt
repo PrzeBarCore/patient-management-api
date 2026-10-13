@@ -1,11 +1,18 @@
 package com.przebarcore.ordermonitoringworker.service
 
-import com.przebarcore.ordermonitoringworker.dto.MedicalOrderCreatedEvent
-import com.przebarcore.ordermonitoringworker.dto.MedicalOrderStatusChangedEvent
+import com.przebarcore.ordermonitoringworker.dto.incoming.MedicalOrderCreatedEvent
+import com.przebarcore.ordermonitoringworker.dto.incoming.MedicalOrderStatusChangedEvent
+import com.przebarcore.ordermonitoringworker.dto.outgoing.NotificationRequestedEvent
 import com.przebarcore.ordermonitoringworker.entity.MonitoredOrder
+import com.przebarcore.ordermonitoringworker.entity.OutboxEvent
 import com.przebarcore.ordermonitoringworker.global.enums.MonitoringStatus
+import com.przebarcore.ordermonitoringworker.global.enums.outgoing.NotificationType
 import com.przebarcore.ordermonitoringworker.global.enums.OrderStatus
+import com.przebarcore.ordermonitoringworker.global.enums.outgoing.ReferenceType
+import com.przebarcore.ordermonitoringworker.global.enums.outgoing.OutboxAggregateType
+import com.przebarcore.ordermonitoringworker.global.enums.outgoing.OutboxEventType
 import com.przebarcore.ordermonitoringworker.repository.MonitoredOrderRepository
+import com.przebarcore.ordermonitoringworker.repository.OutboxEventRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
@@ -21,14 +28,19 @@ import org.mockito.kotlin.whenever
 import java.time.LocalDateTime
 import java.util.Optional
 import org.junit.jupiter.api.Test
+import tools.jackson.databind.ObjectMapper
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 
 @ExtendWith(MockitoExtension::class)
 class MedicalOrderMonitoringServiceTest{
+    //region Init
     @Mock
     lateinit var medicalOrderRepository: MonitoredOrderRepository
+    @Mock
+    lateinit var outboxEventRepository: OutboxEventRepository
+    private val objectMapper = ObjectMapper()
     private lateinit var medicalOrderMonitoringService: MedicalOrderMonitoringService
     private val fixedClock = Clock.fixed(
         Instant.parse("2026-10-08T12:00:00Z"),
@@ -40,12 +52,16 @@ class MedicalOrderMonitoringServiceTest{
     fun setUp() {
         medicalOrderMonitoringService = MedicalOrderMonitoringService(
             medicalOrderRepository,
+            outboxEventRepository,
+            objectMapper,
             warningThresholdHours,
             fixedClock
         )
 
     }
+    //endregion
 
+    //region ProcessOrderStatusChanged
     @Test
     fun shouldCreateNewRecord(){
         val orderId = 1L
@@ -148,6 +164,52 @@ class MedicalOrderMonitoringServiceTest{
         verify(medicalOrderRepository).findById(orderId)
         verify(medicalOrderRepository, never()).save(any())
     }
+
+    @Test
+    fun shouldIgnoreOlderStatusChangedEvent(){
+        val currentDateTime = now
+
+        val orderId = 1L
+        val statusChangedAt = currentDateTime.minusHours(2)
+        val newStatus = OrderStatus.IN_PROCESS
+        val oldStatus = OrderStatus.NEW
+        val event = MedicalOrderStatusChangedEvent(orderId,
+            oldStatus,
+            newStatus,
+            statusChangedAt)
+
+
+        val monitoredOrderOrderId = orderId
+        val monitoredOrderStatus = OrderStatus.COMPLETED
+        val monitoredOrderChangedAt = currentDateTime.minusHours(1)
+        val monitoredOrderDeadline = null
+        val monitoredOrderMonitoringStatus= MonitoringStatus.CLOSED
+        val monitoredOrderUpdatedAt = currentDateTime.minusHours(1)
+        val monitoredOrder = MonitoredOrder(
+            orderId,
+            monitoredOrderStatus,
+            monitoredOrderChangedAt,
+            monitoredOrderDeadline,
+            monitoredOrderMonitoringStatus,
+            monitoredOrderUpdatedAt)
+
+        whenever(medicalOrderRepository.findById(orderId)).thenReturn(Optional.of(monitoredOrder))
+
+        medicalOrderMonitoringService.processOrderStatusChanged(event)
+
+        assertThat(monitoredOrder.orderId).isEqualTo(monitoredOrderOrderId)
+        assertThat(monitoredOrder.status).isEqualTo(monitoredOrderStatus)
+        assertThat(monitoredOrder.statusChangedAt).isEqualTo(monitoredOrderChangedAt)
+        assertThat(monitoredOrder.updatedAt).isEqualTo(monitoredOrderUpdatedAt)
+        assertThat(monitoredOrder.monitoringStatus).isEqualTo(monitoredOrderMonitoringStatus)
+        assertThat(monitoredOrder.deadlineAt).isNull()
+
+        verify(medicalOrderRepository).findById(orderId)
+        verify(medicalOrderRepository, never()).save(any())
+    }
+    //endregion
+
+    //region ProcessOrderCreated
     @Test
     fun shouldCreateMonitoredOrderWhenOrderCreated(){
         val orderId = 1L
@@ -212,50 +274,9 @@ class MedicalOrderMonitoringServiceTest{
         verify(medicalOrderRepository, never()).save(any())
         verify(medicalOrderRepository).findById(orderId)
     }
+    //endregion
 
-    @Test
-    fun shouldIgnoreOlderStatusChangedEvent(){
-        val currentDateTime = now
-
-        val orderId = 1L
-        val statusChangedAt = currentDateTime.minusHours(2)
-        val newStatus = OrderStatus.IN_PROCESS
-        val oldStatus = OrderStatus.NEW
-        val event = MedicalOrderStatusChangedEvent(orderId,
-            oldStatus,
-            newStatus,
-            statusChangedAt)
-
-
-        val monitoredOrderOrderId = orderId
-        val monitoredOrderStatus = OrderStatus.COMPLETED
-        val monitoredOrderChangedAt = currentDateTime.minusHours(1)
-        val monitoredOrderDeadline = null
-        val monitoredOrderMonitoringStatus= MonitoringStatus.CLOSED
-        val monitoredOrderUpdatedAt = currentDateTime.minusHours(1)
-        val monitoredOrder = MonitoredOrder(
-            orderId,
-            monitoredOrderStatus,
-            monitoredOrderChangedAt,
-            monitoredOrderDeadline,
-            monitoredOrderMonitoringStatus,
-            monitoredOrderUpdatedAt)
-
-        whenever(medicalOrderRepository.findById(orderId)).thenReturn(Optional.of(monitoredOrder))
-
-        medicalOrderMonitoringService.processOrderStatusChanged(event)
-
-        assertThat(monitoredOrder.orderId).isEqualTo(monitoredOrderOrderId)
-        assertThat(monitoredOrder.status).isEqualTo(monitoredOrderStatus)
-        assertThat(monitoredOrder.statusChangedAt).isEqualTo(monitoredOrderChangedAt)
-        assertThat(monitoredOrder.updatedAt).isEqualTo(monitoredOrderUpdatedAt)
-        assertThat(monitoredOrder.monitoringStatus).isEqualTo(monitoredOrderMonitoringStatus)
-        assertThat(monitoredOrder.deadlineAt).isNull()
-
-        verify(medicalOrderRepository).findById(orderId)
-        verify(medicalOrderRepository, never()).save(any())
-    }
-
+    //region ReviewOrdersDeadline
     @Test
     fun shouldSetWarningWhenDeadlineIsClose(){
         val orderId =1L
@@ -271,15 +292,29 @@ class MedicalOrderMonitoringServiceTest{
 
         medicalOrderMonitoringService.reviewOrdersDeadline()
 
+        val argumentCaptor = ArgumentCaptor.forClass(OutboxEvent::class.java)
+        verify(outboxEventRepository).save(argumentCaptor.capture())
+        verify(medicalOrderRepository).findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
+        //outboxEvent
+        val outboxEvent = argumentCaptor.value
+        val payload = objectMapper.readValue(outboxEvent.payload, NotificationRequestedEvent::class.java)
+        assertThat(outboxEvent.aggregateId).isEqualTo(orderId)
+        assertThat(outboxEvent.aggregateType).isEqualTo(OutboxAggregateType.MEDICAL_ORDER)
+        assertThat(outboxEvent.eventType).isEqualTo(OutboxEventType.NOTIFICATION_REQUESTED)
+        assertThat(outboxEvent.createdAt).isEqualTo(now)
+        assertThat(payload.requestId).isNotNull()
+        assertThat(payload.notificationType).isEqualTo(NotificationType.REMINDER)
+        assertThat(payload.createdAt).isEqualTo(now)
+        assertThat(payload.referenceId).isEqualTo(orderId)
+        assertThat(payload.referenceType).isEqualTo(ReferenceType.MEDICAL_ORDER)
+        //order
         assertThat(orderToReview.monitoringStatus).isEqualTo(MonitoringStatus.WARNING)
         assertThat(orderToReview.updatedAt).isEqualTo(now)
-        //not changed
+        //order not changed
         assertThat(orderToReview.orderId).isEqualTo(orderId)
         assertThat(orderToReview.status).isEqualTo(status)
         assertThat(orderToReview.deadlineAt).isEqualTo(deadlineAt)
         assertThat(orderToReview.statusChangedAt).isEqualTo(statusChangedAt)
-
-        verify(medicalOrderRepository).findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
     }
 
     @Test
@@ -297,35 +332,25 @@ class MedicalOrderMonitoringServiceTest{
 
         medicalOrderMonitoringService.reviewOrdersDeadline()
 
+        val argumentCaptor = ArgumentCaptor.forClass(OutboxEvent::class.java)
+        verify(outboxEventRepository).save(argumentCaptor.capture())
+        verify(medicalOrderRepository).findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
+        //outboxEvent
+        val outboxEvent = argumentCaptor.value
+        val payload = objectMapper.readValue(outboxEvent.payload, NotificationRequestedEvent::class.java)
+        assertThat(outboxEvent.aggregateId).isEqualTo(orderId)
+        assertThat(outboxEvent.aggregateType).isEqualTo(OutboxAggregateType.MEDICAL_ORDER)
+        assertThat(outboxEvent.eventType).isEqualTo(OutboxEventType.NOTIFICATION_REQUESTED)
+        assertThat(outboxEvent.createdAt).isEqualTo(now)
+        assertThat(payload.requestId).isNotNull()
+        assertThat(payload.notificationType).isEqualTo(NotificationType.ESCALATION)
+        assertThat(payload.createdAt).isEqualTo(now)
+        assertThat(payload.referenceId).isEqualTo(orderId)
+        assertThat(payload.referenceType).isEqualTo(ReferenceType.MEDICAL_ORDER)
+        //order
         assertThat(orderToReview.monitoringStatus).isEqualTo(MonitoringStatus.OVERDUE)
         assertThat(orderToReview.updatedAt).isEqualTo(now)
         //not changed
-        assertThat(orderToReview.orderId).isEqualTo(orderId)
-        assertThat(orderToReview.status).isEqualTo(status)
-        assertThat(orderToReview.deadlineAt).isEqualTo(deadlineAt)
-        assertThat(orderToReview.statusChangedAt).isEqualTo(statusChangedAt)
-
-        verify(medicalOrderRepository).findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
-    }
-
-
-    @Test
-    fun shouldNotModifyRecordWhenDeadlineIsFar(){
-        val orderId =1L
-        val status = OrderStatus.NEW
-        val deadlineAt = now.plusHours(7)
-        val updatedAt = deadlineAt.minusDays(1)
-        val statusChangedAt = updatedAt
-        val monitoringStatus = MonitoringStatus.ON_TIME
-        val orderToReview = MonitoredOrder(orderId, status, statusChangedAt, deadlineAt, monitoringStatus, updatedAt)
-
-        whenever(medicalOrderRepository.findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED))
-            .thenReturn(listOf(orderToReview))
-
-        medicalOrderMonitoringService.reviewOrdersDeadline()
-
-        assertThat(orderToReview.monitoringStatus).isEqualTo(monitoringStatus)
-        assertThat(orderToReview.updatedAt).isEqualTo(updatedAt)
         assertThat(orderToReview.orderId).isEqualTo(orderId)
         assertThat(orderToReview.status).isEqualTo(status)
         assertThat(orderToReview.deadlineAt).isEqualTo(deadlineAt)
@@ -349,6 +374,22 @@ class MedicalOrderMonitoringServiceTest{
 
         medicalOrderMonitoringService.reviewOrdersDeadline()
 
+        val argumentCaptor = ArgumentCaptor.forClass(OutboxEvent::class.java)
+        verify(outboxEventRepository).save(argumentCaptor.capture())
+        verify(medicalOrderRepository).findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
+        //outboxEvent
+        val outboxEvent = argumentCaptor.value
+        val payload = objectMapper.readValue(outboxEvent.payload, NotificationRequestedEvent::class.java)
+        assertThat(outboxEvent.aggregateId).isEqualTo(orderId)
+        assertThat(outboxEvent.aggregateType).isEqualTo(OutboxAggregateType.MEDICAL_ORDER)
+        assertThat(outboxEvent.eventType).isEqualTo(OutboxEventType.NOTIFICATION_REQUESTED)
+        assertThat(outboxEvent.createdAt).isEqualTo(now)
+        assertThat(payload.requestId).isNotNull()
+        assertThat(payload.notificationType).isEqualTo(NotificationType.REMINDER)
+        assertThat(payload.createdAt).isEqualTo(now)
+        assertThat(payload.referenceId).isEqualTo(orderId)
+        assertThat(payload.referenceType).isEqualTo(ReferenceType.MEDICAL_ORDER)
+        //order
         assertThat(orderToReview.monitoringStatus).isEqualTo(MonitoringStatus.WARNING)
         assertThat(orderToReview.updatedAt).isEqualTo(now)
         //not changed
@@ -356,8 +397,6 @@ class MedicalOrderMonitoringServiceTest{
         assertThat(orderToReview.status).isEqualTo(status)
         assertThat(orderToReview.deadlineAt).isEqualTo(deadlineAt)
         assertThat(orderToReview.statusChangedAt).isEqualTo(statusChangedAt)
-
-        verify(medicalOrderRepository).findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
     }
 
     @Test
@@ -375,6 +414,22 @@ class MedicalOrderMonitoringServiceTest{
 
         medicalOrderMonitoringService.reviewOrdersDeadline()
 
+        val argumentCaptor = ArgumentCaptor.forClass(OutboxEvent::class.java)
+        verify(outboxEventRepository).save(argumentCaptor.capture())
+        verify(medicalOrderRepository).findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
+        //outboxEvent
+        val outboxEvent = argumentCaptor.value
+        val payload = objectMapper.readValue(outboxEvent.payload, NotificationRequestedEvent::class.java)
+        assertThat(outboxEvent.aggregateId).isEqualTo(orderId)
+        assertThat(outboxEvent.aggregateType).isEqualTo(OutboxAggregateType.MEDICAL_ORDER)
+        assertThat(outboxEvent.eventType).isEqualTo(OutboxEventType.NOTIFICATION_REQUESTED)
+        assertThat(outboxEvent.createdAt).isEqualTo(now)
+        assertThat(payload.requestId).isNotNull()
+        assertThat(payload.notificationType).isEqualTo(NotificationType.ESCALATION)
+        assertThat(payload.createdAt).isEqualTo(now)
+        assertThat(payload.referenceId).isEqualTo(orderId)
+        assertThat(payload.referenceType).isEqualTo(ReferenceType.MEDICAL_ORDER)
+        //order
         assertThat(orderToReview.monitoringStatus).isEqualTo(MonitoringStatus.OVERDUE)
         assertThat(orderToReview.updatedAt).isEqualTo(now)
         //not changed
@@ -382,7 +437,42 @@ class MedicalOrderMonitoringServiceTest{
         assertThat(orderToReview.status).isEqualTo(status)
         assertThat(orderToReview.deadlineAt).isEqualTo(deadlineAt)
         assertThat(orderToReview.statusChangedAt).isEqualTo(statusChangedAt)
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value= MonitoringStatus::class,
+        names = ["WARNING", "OVERDUE", "ON_TIME"]
+    )
+    fun shouldNotCreateNotificationWhenMonitoringStatusIsAlreadyCorrect(monitoringStatus: MonitoringStatus){
+
+        val deadlineAt = when {
+            monitoringStatus == MonitoringStatus.OVERDUE -> now.minusHours(1)
+            monitoringStatus ==MonitoringStatus.WARNING -> now.plusHours(4)
+            else -> now.plusHours(7)
+        }
+
+        val orderId =1L
+        val status = OrderStatus.NEW
+        val updatedAt = deadlineAt.minusDays(1)
+        val statusChangedAt = updatedAt
+        val orderToReview = MonitoredOrder(orderId, status, statusChangedAt, deadlineAt, monitoringStatus, updatedAt)
+
+        whenever(medicalOrderRepository.findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED))
+            .thenReturn(listOf(orderToReview))
+
+        medicalOrderMonitoringService.reviewOrdersDeadline()
+
+        assertThat(orderToReview.monitoringStatus).isEqualTo(monitoringStatus)
+        assertThat(orderToReview.updatedAt).isEqualTo(updatedAt)
+        assertThat(orderToReview.orderId).isEqualTo(orderId)
+        assertThat(orderToReview.status).isEqualTo(status)
+        assertThat(orderToReview.deadlineAt).isEqualTo(deadlineAt)
+        assertThat(orderToReview.statusChangedAt).isEqualTo(statusChangedAt)
 
         verify(medicalOrderRepository).findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
+        verify(outboxEventRepository, never()).save(any())
     }
+    //endregion
+
 }
