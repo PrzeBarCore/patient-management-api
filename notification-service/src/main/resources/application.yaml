@@ -1,3 +1,10 @@
 spring:
   application:
     name: notification-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notificationservice
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
