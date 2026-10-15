@@ -1,0 +1,4 @@
+ALTER TABLE Notification
+ADD COLUMN attempt_count INT NOT NULL DEFAULT 0,
+ADD COLUMN next_attempt_at TIMESTAMP,
+ADD COLUMN last_error VARCHAR(200)

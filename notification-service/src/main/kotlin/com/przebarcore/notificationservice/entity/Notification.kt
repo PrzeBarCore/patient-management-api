@@ -24,4 +24,8 @@ class Notification(
     @Enumerated(EnumType.STRING)
     var status : NotificationStatus,
     val createdAt : LocalDateTime,
-    var processedAt : LocalDateTime?)
+    var processedAt : LocalDateTime?,
+    var attemptCount : Int,
+    var nextAttemptAt : LocalDateTime?,
+    var lastError : String?
+)

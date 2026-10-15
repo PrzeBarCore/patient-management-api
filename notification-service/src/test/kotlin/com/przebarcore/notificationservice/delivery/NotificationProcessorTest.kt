@@ -42,9 +42,11 @@ class NotificationProcessorTest {
 
     private lateinit var notificationProcessor: NotificationProcessor
 
+    private val maxAttemptsCount=2
+
     @BeforeEach
     fun setUp() {
-        notificationProcessor = NotificationProcessor(notificationSender, notificationRepository, fixedClock)
+        notificationProcessor = NotificationProcessor(notificationSender, notificationRepository, fixedClock, maxAttemptsCount)
     }
 
     @Test
@@ -55,7 +57,7 @@ class NotificationProcessorTest {
         val notificationType1 = NotificationType.ESCALATION
         val status1 = NotificationStatus.PENDING
         val createdAt1 = now.minusHours(2)
-        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null)
+        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null, 0, null, null)
 
         val requestId2 = UUID.randomUUID()
         val referenceType2 = ReferenceType.MEDICAL_ORDER
@@ -63,7 +65,7 @@ class NotificationProcessorTest {
         val notificationType2 = NotificationType.REMINDER
         val status2 = NotificationStatus.PENDING
         val createdAt2 = now.minusHours(3)
-        val notification2 = Notification(requestId2, referenceType2, referenceId2, notificationType2, status2, createdAt2, null)
+        val notification2 = Notification(requestId2, referenceType2, referenceId2, notificationType2, status2, createdAt2, null, 0, null, null)
 
         whenever(notificationRepository.findById(requestId1)).thenReturn(Optional.of(notification1))
         whenever(notificationRepository.findById(requestId2)).thenReturn(Optional.of(notification2))
@@ -78,33 +80,17 @@ class NotificationProcessorTest {
         assertThat(captor.secondValue.message).isEqualTo("Order $referenceId2 should be processed in 6 hours")
         assertThat(notification1.status).isEqualTo(NotificationStatus.SENT)
         assertThat(notification1.processedAt).isEqualTo(now)
+        assertThat(notification1.attemptCount).isEqualTo(1)
+        assertThat(notification1.lastError).isNull()
+        assertThat(notification1.nextAttemptAt).isNull()
         assertThat(notification2.status).isEqualTo(NotificationStatus.SENT)
         assertThat(notification2.processedAt).isEqualTo(now)
+        assertThat(notification2.attemptCount).isEqualTo(1)
+        assertThat(notification2.lastError).isNull()
+        assertThat(notification2.nextAttemptAt).isNull()
 
         verify(notificationRepository).findById(requestId1)
         verify(notificationRepository).findById(requestId2)
-    }
-
-    @Test
-    fun shouldSetFailedWhenSenderFails(){
-        val requestId1 = UUID.randomUUID()
-        val referenceType1 = ReferenceType.MEDICAL_ORDER
-        val referenceId1 = 10L
-        val notificationType1 = NotificationType.ESCALATION
-        val status1 = NotificationStatus.PENDING
-        val createdAt1 = now.minusHours(2)
-        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null)
-
-        whenever(notificationRepository.findById(requestId1)).thenReturn(Optional.of(notification1))
-        doThrow(RuntimeException("Ups")).whenever(notificationSender).send(any<NotificationDto>())
-
-        notificationProcessor.processNotification(requestId1)
-
-        assertThat(notification1.status).isEqualTo(NotificationStatus.FAILED)
-        assertThat(notification1.processedAt).isEqualTo(now)
-
-        verify(notificationRepository).findById(requestId1)
-        verify(notificationSender).send(any<NotificationDto>())
     }
 
     @Test

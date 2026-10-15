@@ -20,7 +20,10 @@ interface NotificationRepository : JpaRepository<Notification, UUID> {
             notification_type,
             status,
             created_at,
-            processed_at 
+            processed_at,
+            attempt_count,
+            next_attempt_at ,
+            last_error 
         )
         VALUES (
             :requestId,
@@ -29,6 +32,9 @@ interface NotificationRepository : JpaRepository<Notification, UUID> {
             :notificationType,
             'PENDING',
             :createdAt,
+            NULL, 
+            0, 
+            NULL,
             NULL
         )
         ON CONFLICT (request_id) DO NOTHING
@@ -44,7 +50,7 @@ interface NotificationRepository : JpaRepository<Notification, UUID> {
     ): Int
 
     @Query("""
-        select n.requestId from Notification n where n.status = :status
+        select n.requestId from Notification n where n.status = :status and (n.nextAttemptAt is null or n.nextAttemptAt <= :dateTime)
     """)
-    fun findAllRequestIdByStatus(@Param("status") status: NotificationStatus): List<UUID>
+    fun findAllRequestIdByStatusForPendingNotification(@Param("status") status: NotificationStatus, @Param("dateTime") dateTime: LocalDateTime): List<UUID>
 }

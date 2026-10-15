@@ -11,3 +11,4 @@ spring:
 notification-delivery:
   scheduler-enabled: true
   scheduler-fixed-delay: 10000
+  max-attempts-count: 4

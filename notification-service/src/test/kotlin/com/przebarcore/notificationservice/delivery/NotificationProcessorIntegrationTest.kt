@@ -34,7 +34,8 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @SpringBootTest(
-    properties = ["notification-monitoring.scheduler-enabled=false"]
+    properties = ["notification-delivery.scheduler-enabled=false",
+    "notification-delivery.max-attempts-count=3"]
 )
 @Testcontainers
 @Import(NotificationProcessorIntegrationTest.FixedClockConfig::class)
@@ -52,6 +53,8 @@ class NotificationProcessorIntegrationTest {
     private lateinit var notificationRepository: NotificationRepository
     @Autowired
     private lateinit var notificationProcessor: NotificationProcessor
+
+    private val maxAttemptsCount: Int = 3
 
     @TestConfiguration
     class FixedClockConfig {
@@ -79,7 +82,7 @@ class NotificationProcessorIntegrationTest {
         val notificationType1 = NotificationType.ESCALATION
         val status1 = NotificationStatus.PENDING
         val createdAt1 = now.minusHours(2)
-        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null)
+        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null, 0, null, null)
 
         notificationRepository.save(notification1)
 
@@ -93,19 +96,22 @@ class NotificationProcessorIntegrationTest {
         assertThat(savedNotification.referenceId).isEqualTo(referenceId1)
         assertThat(savedNotification.notificationType).isEqualTo(notificationType1)
         assertThat(savedNotification.createdAt).isEqualTo(createdAt1)
+        assertThat(savedNotification.attemptCount).isEqualTo(1)
+        assertThat(savedNotification.nextAttemptAt).isNull()
+        assertThat(savedNotification.lastError).isNull()
 
         verify(notificationSender).send(any<NotificationDto>())
     }
 
     @Test
-    fun shouldSaveFailedStatusWhenSenderThrowsException(){
+    fun shouldSaveFailedStatusWhenSenderThrowsExceptionAndMaxAttemptCountIsReached(){
         val requestId1 = UUID.randomUUID()
         val referenceType1 = ReferenceType.MEDICAL_ORDER
         val referenceId1 = 10L
         val notificationType1 = NotificationType.ESCALATION
         val status1 = NotificationStatus.PENDING
         val createdAt1 = now.minusHours(2)
-        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null)
+        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null, maxAttemptsCount-1, now.minusHours(1), null)
 
         notificationRepository.save(notification1)
 
@@ -121,6 +127,69 @@ class NotificationProcessorIntegrationTest {
         assertThat(savedNotification.referenceId).isEqualTo(referenceId1)
         assertThat(savedNotification.notificationType).isEqualTo(notificationType1)
         assertThat(savedNotification.createdAt).isEqualTo(createdAt1)
+        assertThat(savedNotification.attemptCount).isEqualTo(maxAttemptsCount)
+        assertThat(savedNotification.nextAttemptAt).isNull()
+        assertThat(savedNotification.lastError).contains("Sender: ${notificationSender::class.simpleName} returned exception: ")
+
+        verify(notificationSender).send(any<NotificationDto>())
+    }
+
+    @Test
+    fun shouldPrepareNotificationForNextDeliveryAttempt(){
+        val requestId1 = UUID.randomUUID()
+        val referenceType1 = ReferenceType.MEDICAL_ORDER
+        val referenceId1 = 10L
+        val notificationType1 = NotificationType.ESCALATION
+        val status1 = NotificationStatus.PENDING
+        val createdAt1 = now.minusHours(2)
+        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null, 0, null, null)
+
+        notificationRepository.save(notification1)
+
+        doThrow(RuntimeException("Sender no more")).whenever(notificationSender).send(any<NotificationDto>())
+
+        notificationProcessor.processNotification(requestId1)
+
+        val savedNotification = notificationRepository.findById(requestId1).orElseThrow()
+
+        assertThat(savedNotification.status).isEqualTo(NotificationStatus.PENDING)
+        assertThat(savedNotification.processedAt).isNull()
+        assertThat(savedNotification.referenceType).isEqualTo(referenceType1)
+        assertThat(savedNotification.referenceId).isEqualTo(referenceId1)
+        assertThat(savedNotification.notificationType).isEqualTo(notificationType1)
+        assertThat(savedNotification.createdAt).isEqualTo(createdAt1)
+        assertThat(savedNotification.attemptCount).isEqualTo(1)
+        assertThat(savedNotification.nextAttemptAt).isEqualTo(now.plusSeconds(30))
+        assertThat(savedNotification.lastError).contains("Sender: ${notificationSender::class.simpleName} returned exception: ")
+
+        verify(notificationSender).send(any<NotificationDto>())
+    }
+
+    @Test
+    fun shouldSaveSentStatusIfNextAttemptIsSuccessful(){
+        val requestId1 = UUID.randomUUID()
+        val referenceType1 = ReferenceType.MEDICAL_ORDER
+        val referenceId1 = 10L
+        val notificationType1 = NotificationType.ESCALATION
+        val status1 = NotificationStatus.PENDING
+        val createdAt1 = now.minusHours(2)
+        val notification1 = Notification(requestId1, referenceType1, referenceId1, notificationType1, status1, createdAt1, null, 1, now.minusSeconds(31), "Some error")
+
+        notificationRepository.save(notification1)
+
+        notificationProcessor.processNotification(requestId1)
+
+        val savedNotification = notificationRepository.findById(requestId1).orElseThrow()
+
+        assertThat(savedNotification.status).isEqualTo(NotificationStatus.SENT)
+        assertThat(savedNotification.processedAt).isEqualTo(now)
+        assertThat(savedNotification.referenceType).isEqualTo(referenceType1)
+        assertThat(savedNotification.referenceId).isEqualTo(referenceId1)
+        assertThat(savedNotification.notificationType).isEqualTo(notificationType1)
+        assertThat(savedNotification.createdAt).isEqualTo(createdAt1)
+        assertThat(savedNotification.attemptCount).isEqualTo(2)
+        assertThat(savedNotification.nextAttemptAt).isNull()
+        assertThat(savedNotification.lastError).isNull()
 
         verify(notificationSender).send(any<NotificationDto>())
     }
