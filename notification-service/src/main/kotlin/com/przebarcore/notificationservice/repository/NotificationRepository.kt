@@ -1,6 +1,7 @@
 package com.przebarcore.notificationservice.repository
 
 import com.przebarcore.notificationservice.entity.Notification
+import com.przebarcore.notificationservice.global.enums.NotificationStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -41,4 +42,9 @@ interface NotificationRepository : JpaRepository<Notification, UUID> {
         @Param("notificationType") notificationType: String,
         @Param("createdAt") createdAt: LocalDateTime,
     ): Int
+
+    @Query("""
+        select n.requestId from Notification n where n.status = :status
+    """)
+    fun findAllRequestIdByStatus(@Param("status") status: NotificationStatus): List<UUID>
 }
