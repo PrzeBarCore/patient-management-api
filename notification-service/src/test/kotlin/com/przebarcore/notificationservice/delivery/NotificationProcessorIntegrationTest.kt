@@ -1,7 +1,7 @@
 package com.przebarcore.notificationservice.delivery
 
 import com.przebarcore.notificationservice.delivery.sender.NotificationSender
-import com.przebarcore.notificationservice.dto.NotificationDto
+import com.przebarcore.notificationservice.delivery.model.NotificationMessage
 import com.przebarcore.notificationservice.entity.Notification
 import com.przebarcore.notificationservice.global.enums.NotificationStatus
 import com.przebarcore.notificationservice.global.enums.NotificationType
@@ -35,7 +35,8 @@ import java.util.UUID
 
 @SpringBootTest(
     properties = ["notification-delivery.scheduler-enabled=false",
-    "notification-delivery.max-attempts-count=3"]
+        "notification-delivery.max-attempts-count=3",
+        "notification-delivery.sender-type=logging"]
 )
 @Testcontainers
 @Import(NotificationProcessorIntegrationTest.FixedClockConfig::class)
@@ -53,6 +54,8 @@ class NotificationProcessorIntegrationTest {
     private lateinit var notificationRepository: NotificationRepository
     @Autowired
     private lateinit var notificationProcessor: NotificationProcessor
+    @Autowired
+    private lateinit var messageFactory: NotificationMessageFactory
 
     private val maxAttemptsCount: Int = 3
 
@@ -100,7 +103,7 @@ class NotificationProcessorIntegrationTest {
         assertThat(savedNotification.nextAttemptAt).isNull()
         assertThat(savedNotification.lastError).isNull()
 
-        verify(notificationSender).send(any<NotificationDto>())
+        verify(notificationSender).send(any<NotificationMessage>())
     }
 
     @Test
@@ -115,7 +118,7 @@ class NotificationProcessorIntegrationTest {
 
         notificationRepository.save(notification1)
 
-        doThrow(RuntimeException("Sender no more")).whenever(notificationSender).send(any<NotificationDto>())
+        doThrow(RuntimeException("Sender no more")).whenever(notificationSender).send(any<NotificationMessage>())
 
         notificationProcessor.processNotification(requestId1)
 
@@ -131,7 +134,7 @@ class NotificationProcessorIntegrationTest {
         assertThat(savedNotification.nextAttemptAt).isNull()
         assertThat(savedNotification.lastError).contains("Sender: ${notificationSender::class.simpleName} returned exception: ")
 
-        verify(notificationSender).send(any<NotificationDto>())
+        verify(notificationSender).send(any<NotificationMessage>())
     }
 
     @Test
@@ -146,7 +149,7 @@ class NotificationProcessorIntegrationTest {
 
         notificationRepository.save(notification1)
 
-        doThrow(RuntimeException("Sender no more")).whenever(notificationSender).send(any<NotificationDto>())
+        doThrow(RuntimeException("Sender no more")).whenever(notificationSender).send(any<NotificationMessage>())
 
         notificationProcessor.processNotification(requestId1)
 
@@ -162,7 +165,7 @@ class NotificationProcessorIntegrationTest {
         assertThat(savedNotification.nextAttemptAt).isEqualTo(now.plusSeconds(30))
         assertThat(savedNotification.lastError).contains("Sender: ${notificationSender::class.simpleName} returned exception: ")
 
-        verify(notificationSender).send(any<NotificationDto>())
+        verify(notificationSender).send(any<NotificationMessage>())
     }
 
     @Test
@@ -191,7 +194,7 @@ class NotificationProcessorIntegrationTest {
         assertThat(savedNotification.nextAttemptAt).isNull()
         assertThat(savedNotification.lastError).isNull()
 
-        verify(notificationSender).send(any<NotificationDto>())
+        verify(notificationSender).send(any<NotificationMessage>())
     }
 
 }

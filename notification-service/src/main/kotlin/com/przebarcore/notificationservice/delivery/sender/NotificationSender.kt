@@ -1,7 +1,7 @@
 package com.przebarcore.notificationservice.delivery.sender
 
-import com.przebarcore.notificationservice.dto.NotificationDto
+import com.przebarcore.notificationservice.delivery.model.NotificationMessage
 
 interface NotificationSender {
-    fun send(notificationDto: NotificationDto)
+    fun send(notificationMessage: NotificationMessage)
 }

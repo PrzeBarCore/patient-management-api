@@ -21,7 +21,7 @@ public class SqsEventSender implements EventSender{
     private final SqsClient sqsClient;
     private final ObjectMapper objectMapper;
 
-    public SqsEventSender(SqsClient sqsClient, @Value("${aws.sqs.notification-queue-url}") String queueUrl, ObjectMapper objectMapper) {
+    public SqsEventSender(SqsClient sqsClient, @Value("${aws.sqs.queue-url}") String queueUrl, ObjectMapper objectMapper) {
         this.sqsClient = sqsClient;
         this.queueUrl = queueUrl;
         this.objectMapper = objectMapper;

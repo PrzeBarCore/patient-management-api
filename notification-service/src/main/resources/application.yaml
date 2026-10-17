@@ -8,7 +8,14 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  mail:
+    host: localhost
+    port: 1025
 notification-delivery:
+  sender-type: email
   scheduler-enabled: true
   scheduler-fixed-delay: 10000
   max-attempts-count: 4
+  email:
+    recipient: test@example.com
+    from: laboratory@example.com

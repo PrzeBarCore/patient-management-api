@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration
 import java.time.Clock
 
 @Configuration
-class Configuration {
+class TimeConfiguration {
     @Bean
     fun clock() : Clock = Clock.systemDefaultZone()
 }

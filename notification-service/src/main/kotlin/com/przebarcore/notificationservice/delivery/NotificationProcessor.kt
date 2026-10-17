@@ -1,28 +1,23 @@
 package com.przebarcore.notificationservice.delivery
 
+import com.przebarcore.notificationservice.configuration.NotificationDeliveryProperties
 import com.przebarcore.notificationservice.delivery.sender.NotificationSender
-import com.przebarcore.notificationservice.dto.NotificationDto
-import com.przebarcore.notificationservice.entity.Notification
 import com.przebarcore.notificationservice.global.enums.NotificationStatus
-import com.przebarcore.notificationservice.global.enums.NotificationType
-import com.przebarcore.notificationservice.global.enums.ReferenceType
 import com.przebarcore.notificationservice.repository.NotificationRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDateTime
 import java.util.UUID
-import kotlin.math.min
 
 @Component
 class NotificationProcessor(
     private val notificationSender: NotificationSender,
     private val notificationRepository: NotificationRepository,
     private val clock: Clock,
-    @Value("\${notification-delivery.max-attempts-count}")
-    private val maxAttemptsCount: Int,
+    private val properties: NotificationDeliveryProperties,
+    private val messageFactory: NotificationMessageFactory
 ) {
 
     companion object{
@@ -35,14 +30,13 @@ class NotificationProcessor(
         val notification = notificationRepository.findById(notificationId)
             .orElseThrow { IllegalArgumentException("Notification $notificationId does not exist") }
 
-        val message = prepareMessage(notification)
-
+        val message = messageFactory.create(notification)
         try{
-            notificationSender.send(NotificationDto(message))
+            notificationSender.send(message)
         } catch (e : Exception){
             logger.error("Sender: {} returned exception for notification: {}",notificationSender::class.simpleName, notificationId, e)
             notification.attemptCount++
-            if(notification.attemptCount < maxAttemptsCount){
+            if(notification.attemptCount < properties.maxAttemptsCount){
                 notification.nextAttemptAt = now.plusSeconds(30L * notification.attemptCount)
             } else {
                 notification.status = NotificationStatus.FAILED
@@ -65,13 +59,5 @@ class NotificationProcessor(
         notification.processedAt = now
     }
 
-    private fun prepareMessage(notification: Notification): String =
-        when(notification.referenceType) {
-            ReferenceType.MEDICAL_ORDER -> {
-                return when(notification.notificationType){
-                    NotificationType.REMINDER -> "Order ${notification.referenceId} should be processed in 6 hours"
-                    NotificationType.ESCALATION -> "Deadline for order ${notification.referenceId} has passed!"
-                }
-            }
-        }
+
 }

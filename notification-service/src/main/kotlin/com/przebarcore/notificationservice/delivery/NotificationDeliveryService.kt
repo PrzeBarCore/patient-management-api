@@ -27,6 +27,7 @@ class NotificationDeliveryService(
                 logger.error("Error while processing notification: {}",notificationId, e)
             }
         }
+
     }
 }
 

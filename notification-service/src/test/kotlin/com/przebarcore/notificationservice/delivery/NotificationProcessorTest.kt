@@ -1,7 +1,9 @@
 package com.przebarcore.notificationservice.delivery
 
+import com.przebarcore.notificationservice.configuration.EmailProperties
+import com.przebarcore.notificationservice.configuration.NotificationDeliveryProperties
 import com.przebarcore.notificationservice.delivery.sender.NotificationSender
-import com.przebarcore.notificationservice.dto.NotificationDto
+import com.przebarcore.notificationservice.delivery.model.NotificationMessage
 import com.przebarcore.notificationservice.entity.Notification
 import com.przebarcore.notificationservice.global.enums.NotificationStatus
 import com.przebarcore.notificationservice.global.enums.NotificationType
@@ -16,7 +18,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -35,6 +36,8 @@ class NotificationProcessorTest {
     @Mock
     private lateinit var notificationRepository: NotificationRepository
 
+    private val messageFactory = NotificationMessageFactory()
+
     private val fixedClock= Clock.fixed(
         Instant.parse("2026-10-14T12:00:00.00Z"),
         ZoneId.of("UTC"))
@@ -44,9 +47,16 @@ class NotificationProcessorTest {
 
     private val maxAttemptsCount=2
 
+    private val properties = NotificationDeliveryProperties(
+        "email",
+        false,
+        5000,
+        maxAttemptsCount,
+        EmailProperties("to","from" ))
+
     @BeforeEach
     fun setUp() {
-        notificationProcessor = NotificationProcessor(notificationSender, notificationRepository, fixedClock, maxAttemptsCount)
+        notificationProcessor = NotificationProcessor(notificationSender, notificationRepository, fixedClock, properties, messageFactory)
     }
 
     @Test
@@ -73,11 +83,11 @@ class NotificationProcessorTest {
         notificationProcessor.processNotification(requestId1)
         notificationProcessor.processNotification(requestId2)
 
-        val captor = argumentCaptor<NotificationDto>()
+        val captor = argumentCaptor<NotificationMessage>()
         verify(notificationSender, times(2)).send(captor.capture())
 
-        assertThat(captor.firstValue.message).isEqualTo("Deadline for order $referenceId1 has passed!")
-        assertThat(captor.secondValue.message).isEqualTo("Order $referenceId2 should be processed in 6 hours")
+        assertThat(captor.firstValue.content).isEqualTo("Deadline for order $referenceId1 has passed!")
+        assertThat(captor.secondValue.content).isEqualTo("Order $referenceId2 should be processed in 6 hours")
         assertThat(notification1.status).isEqualTo(NotificationStatus.SENT)
         assertThat(notification1.processedAt).isEqualTo(now)
         assertThat(notification1.attemptCount).isEqualTo(1)
@@ -104,6 +114,6 @@ class NotificationProcessorTest {
         assertThat(exception.message).isEqualTo("Notification $requestId1 does not exist")
 
         verify(notificationRepository).findById(requestId1)
-        verify(notificationSender, never()).send(any<NotificationDto>())
+        verify(notificationSender, never()).send(any<NotificationMessage>())
     }
 }
