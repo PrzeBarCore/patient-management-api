@@ -53,4 +53,5 @@ interface NotificationRepository : JpaRepository<Notification, UUID> {
         select n.requestId from Notification n where n.status = :status and (n.nextAttemptAt is null or n.nextAttemptAt <= :dateTime)
     """)
     fun findAllRequestIdByStatusForPendingNotification(@Param("status") status: NotificationStatus, @Param("dateTime") dateTime: LocalDateTime): List<UUID>
+    fun countByStatus(@Param("status") status: NotificationStatus): Long
 }

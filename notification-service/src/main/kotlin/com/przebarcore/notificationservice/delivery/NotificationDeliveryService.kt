@@ -17,6 +17,7 @@ class NotificationDeliveryService(
         private val logger = LoggerFactory.getLogger(NotificationDeliveryService::class.java)
     }
     fun processPendingNotifications(){
+        logger.info("Processing pending notifications")
         val notificationIdsToProcess = notificationRepository.findAllRequestIdByStatusForPendingNotification(
             NotificationStatus.PENDING,
             LocalDateTime.now(clock))

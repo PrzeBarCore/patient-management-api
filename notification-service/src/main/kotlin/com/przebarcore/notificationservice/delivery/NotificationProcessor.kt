@@ -3,6 +3,7 @@ package com.przebarcore.notificationservice.delivery
 import com.przebarcore.notificationservice.configuration.NotificationDeliveryProperties
 import com.przebarcore.notificationservice.delivery.sender.NotificationSender
 import com.przebarcore.notificationservice.global.enums.NotificationStatus
+import com.przebarcore.notificationservice.observability.NotificationMetrics
 import com.przebarcore.notificationservice.repository.NotificationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -17,7 +18,8 @@ class NotificationProcessor(
     private val notificationRepository: NotificationRepository,
     private val clock: Clock,
     private val properties: NotificationDeliveryProperties,
-    private val messageFactory: NotificationMessageFactory
+    private val messageFactory: NotificationMessageFactory,
+    private val notificationMetrics: NotificationMetrics
 ) {
 
     companion object{
@@ -26,15 +28,21 @@ class NotificationProcessor(
 
     @Transactional
     fun processNotification(notificationId : UUID){
-        val now = LocalDateTime.now(clock)
+
         val notification = notificationRepository.findById(notificationId)
             .orElseThrow { IllegalArgumentException("Notification $notificationId does not exist") }
-
+        var now: LocalDateTime;
         val message = messageFactory.create(notification)
+        val sample = notificationMetrics.start()
         try{
             notificationSender.send(message)
+            notificationMetrics.registerSuccess(sample)
+            now = LocalDateTime.now(clock)
+
         } catch (e : Exception){
+            notificationMetrics.registerFailure(sample)
             logger.error("Sender: {} returned exception for notification: {}",notificationSender::class.simpleName, notificationId, e)
+            now = LocalDateTime.now(clock)
             notification.attemptCount++
             if(notification.attemptCount < properties.maxAttemptsCount){
                 notification.nextAttemptAt = now.plusSeconds(30L * notification.attemptCount)
@@ -51,13 +59,10 @@ class NotificationProcessor(
                 prefix + (e.message ?: "Unknown error").take(availableLength)
             return
         }
-
         notification.lastError = null
         notification.nextAttemptAt = null
         notification.attemptCount++
         notification.status = NotificationStatus.SENT
         notification.processedAt = now
     }
-
-
 }

@@ -8,6 +8,7 @@ import com.przebarcore.notificationservice.entity.Notification
 import com.przebarcore.notificationservice.global.enums.NotificationStatus
 import com.przebarcore.notificationservice.global.enums.NotificationType
 import com.przebarcore.notificationservice.global.enums.ReferenceType
+import com.przebarcore.notificationservice.observability.NotificationMetrics
 import com.przebarcore.notificationservice.repository.NotificationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -35,6 +36,8 @@ class NotificationProcessorTest {
     private lateinit var notificationSender: NotificationSender
     @Mock
     private lateinit var notificationRepository: NotificationRepository
+    @Mock
+    private lateinit var notificationMetrics: NotificationMetrics
 
     private val messageFactory = NotificationMessageFactory()
 
@@ -56,7 +59,7 @@ class NotificationProcessorTest {
 
     @BeforeEach
     fun setUp() {
-        notificationProcessor = NotificationProcessor(notificationSender, notificationRepository, fixedClock, properties, messageFactory)
+        notificationProcessor = NotificationProcessor(notificationSender, notificationRepository, fixedClock, properties, messageFactory, notificationMetrics)
     }
 
     @Test

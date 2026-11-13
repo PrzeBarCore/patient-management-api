@@ -1,16 +1,23 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: notification-service
+
   datasource:
     url: jdbc:postgresql://localhost:5432/notificationservice
     username: postgres
     password: postgres
+
   jpa:
     hibernate:
       ddl-auto: validate
+
   mail:
     host: localhost
     port: 1025
+
 notification-delivery:
   sender-type: email
   scheduler-enabled: true
@@ -19,3 +26,9 @@ notification-delivery:
   email:
     recipient: test@example.com
     from: laboratory@example.com
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
