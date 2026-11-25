@@ -11,6 +11,7 @@ import com.przebarcore.ordermonitoringworker.global.enums.OrderStatus
 import com.przebarcore.ordermonitoringworker.global.enums.outgoing.ReferenceType
 import com.przebarcore.ordermonitoringworker.global.enums.outgoing.OutboxAggregateType
 import com.przebarcore.ordermonitoringworker.global.enums.outgoing.OutboxEventType
+import com.przebarcore.ordermonitoringworker.observability.OrderMonitoringMetrics
 import com.przebarcore.ordermonitoringworker.repository.MonitoredOrderRepository
 import com.przebarcore.ordermonitoringworker.repository.OutboxEventRepository
 import org.springframework.beans.factory.annotation.Value
@@ -28,7 +29,8 @@ class MedicalOrderMonitoringService(
     private val objectMapper: ObjectMapper,
     @Value("\${monitoring.warning-threshold-hours}")
     private val warningThresholdHours : Long,
-    private val clock: Clock
+    private val clock: Clock,
+    private val metrics: OrderMonitoringMetrics
 ) {
 
     @Transactional
@@ -77,6 +79,7 @@ class MedicalOrderMonitoringService(
 
     @Transactional
     fun reviewOrdersDeadline() {
+        val sample = metrics.start()
         val monitoredOrdersToReview = monitoredOrderRepository.findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(MonitoringStatus.CLOSED)
         val now = LocalDateTime.now(clock)
         for(monitoredOrder in monitoredOrdersToReview){
@@ -87,6 +90,7 @@ class MedicalOrderMonitoringService(
                 else -> MonitoringStatus.ON_TIME
             }
 
+            metrics.registerOrdersState(newMonitoringStatus)
             if(newMonitoringStatus != monitoredOrder.monitoringStatus){
                 monitoredOrder.monitoringStatus = newMonitoringStatus
                 monitoredOrder.updatedAt = now
@@ -117,6 +121,7 @@ class MedicalOrderMonitoringService(
                 }
             }
         }
+        metrics.registerProcessingDuration(sample)
     }
 
     private fun calculateDeadline(orderStatus : OrderStatus, changedAt : LocalDateTime) : LocalDateTime? {

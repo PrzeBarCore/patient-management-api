@@ -16,4 +16,5 @@ interface OutboxEventRepository : JpaRepository<OutboxEvent, Long> {
         WHERE event.processedAt IS NULL AND event.aggregateId = ?1 AND event.aggregateType = ?2
         ORDER BY event.createdAt ASC, event.id ASC""")
      fun findEventsForProcessing(aggregateId: Long, aggregateType: OutboxAggregateType) : List<OutboxEvent>
+    fun countByProcessedAtIsNull() : Long
 }

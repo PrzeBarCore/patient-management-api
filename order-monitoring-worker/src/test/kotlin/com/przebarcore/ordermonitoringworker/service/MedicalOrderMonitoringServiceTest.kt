@@ -11,6 +11,7 @@ import com.przebarcore.ordermonitoringworker.global.enums.OrderStatus
 import com.przebarcore.ordermonitoringworker.global.enums.outgoing.ReferenceType
 import com.przebarcore.ordermonitoringworker.global.enums.outgoing.OutboxAggregateType
 import com.przebarcore.ordermonitoringworker.global.enums.outgoing.OutboxEventType
+import com.przebarcore.ordermonitoringworker.observability.OrderMonitoringMetrics
 import com.przebarcore.ordermonitoringworker.repository.MonitoredOrderRepository
 import com.przebarcore.ordermonitoringworker.repository.OutboxEventRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -39,6 +40,8 @@ class MedicalOrderMonitoringServiceTest{
     @Mock
     lateinit var medicalOrderRepository: MonitoredOrderRepository
     @Mock
+    lateinit var metrics: OrderMonitoringMetrics
+    @Mock
     lateinit var outboxEventRepository: OutboxEventRepository
     private val objectMapper = ObjectMapper()
     private lateinit var medicalOrderMonitoringService: MedicalOrderMonitoringService
@@ -55,7 +58,8 @@ class MedicalOrderMonitoringServiceTest{
             outboxEventRepository,
             objectMapper,
             warningThresholdHours,
-            fixedClock
+            fixedClock,
+            metrics
         )
 
     }

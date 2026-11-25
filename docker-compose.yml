@@ -13,3 +13,27 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=mailhog:1025
+      - GF_SMTP_FROM_ADDRESS=grafana@laboratory.local
+      - GF_SMTP_FROM_NAME=Laboratory Grafana
+      - GF_SMTP_STARTTLS_POLICY=NoStartTLS
+    depends_on:
+      - prometheus
+      - mailhog
+volumes:
+  grafana-storage:
+

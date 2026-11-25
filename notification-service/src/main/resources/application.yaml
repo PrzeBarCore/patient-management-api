@@ -31,4 +31,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,metrics
+        include: health,metrics, prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        notification.delivery.duration: true

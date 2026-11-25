@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface MonitoredOrderRepository : JpaRepository<MonitoredOrder, Long> {
     fun findAllByDeadlineAtIsNotNullAndMonitoringStatusNot(monitoringStatus: MonitoringStatus): List<MonitoredOrder>
+    fun countByMonitoringStatusNot(monitoringStatus: MonitoringStatus): Long
 }
